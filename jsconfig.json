@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "hardhat/hardhat.config.js",
+    "hardhat/ignition/modules",
+    "hardhat/abi",
+    "hardhat/dist",
+    "hardhat/test",
+    "frontend/src",
+    "frontend/test",
+    "frontend/vite.config.js"
+  ]
+}

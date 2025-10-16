@@ -1,0 +1,25 @@
+{
+  "name": "ethereum-scaffold-contracts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "chain": "hardhat node",
+    "compile": "hardhat compile",
+    "deploy:test": "hardhat ignition deploy ignition/modules/NFTMarketplace.js",
+    "deploy": "hardhat ignition deploy ignition/modules/NFTMarketplace.js --network localhost --reset"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.0",
+    "@nomicfoundation/hardhat-ignition-ethers": "^3.0.2",
+    "@nomicfoundation/hardhat-keystore": "^3.0.1",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@solidstate/hardhat-abi-exporter": "^3.0.0",
+    "dotenv": "^17.2.1",
+    "hardhat": "^3.0.4"
+  }
+}
