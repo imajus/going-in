@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { getDeployments } from 'ethereum-scaffold-contracts';
+import { getDeployment } from 'ethereum-scaffold-contracts';
 
 /**
  * Get default provider based on environment configuration
@@ -17,9 +17,7 @@ export function getDefaultProvider() {
  */
 export async function getNFTMarketplace(runner) {
   try {
-    const { chainId } = await runner.provider.getNetwork();
-    const deployments = getDeployments(chainId);
-    const { abi, address } = deployments.NFTMarketplace;
+    const { abi, address } = getDeployment('NFTMarketplace');
     return new ethers.Contract(address, abi, runner);
   } catch (error) {
     console.error('Error loading NFTMarketplace contract:', error);

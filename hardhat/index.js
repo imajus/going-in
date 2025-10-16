@@ -1,64 +1,43 @@
-// Auto-import all ABIs using Vite's glob import feature
-const abiModules = import.meta.glob('./abi/*.json', {
+// Auto-import all deployment JSON files from dist folder
+const deploymentModules = import.meta.glob('./dist/*.json', {
   eager: true,
   import: 'default',
 });
 
-// Auto-import all deployment files across all chains
-const deploymentModules = import.meta.glob(
-  './ignition/deployments/chain-*/deployed_addresses.json',
-  {
-    eager: true,
-    import: 'default',
-  }
-);
+// Build contracts object from imported deployment files
+// Each file contains: { address, abi, chainId, network, deployedAt }
+const contracts = {};
 
-// Build ABIs object from imported modules
-export const abis = {};
-for (const path in abiModules) {
-  // Extract contract name from path: './abi/NFTMarketplace.json' -> 'NFTMarketplace'
+for (const path in deploymentModules) {
+  // Extract contract name from path: './dist/ParallelLike.json' -> 'ParallelLike'
   const match = path.match(/\/([^/]+)\.json$/);
   if (match) {
     const contractName = match[1];
-    abis[contractName] = abiModules[path];
+    const deploymentData = deploymentModules[path];
+    contracts[contractName] = {
+      address: deploymentData.address,
+      abi: deploymentData.abi,
+    };
   }
 }
 
-// Build deployments object from imported modules
-const deployments = {};
-for (const path in deploymentModules) {
-  // Extract chain ID from path: './ignition/deployments/chain-31337/...' -> '31337'
-  const match = path.match(/chain-(\d+)/);
-  if (match) {
-    const chainId = match[1];
-    deployments[chainId] = deploymentModules[path];
-  }
+export function getDeployments() {
+  return contracts;
 }
 
 /**
- * Get contract deployments for a specific chain
- * @param {string|number} chainId - The chain ID to get deployments for
- * @returns {Object} Object mapping contract names to their deployment info
+ * Get a specific contract by name
+ * @param {string} contractName - The name of the contract
+ * @returns {Object|null} Contract object with address and abi, or null if not found
  */
-export function getDeployments(chainId) {
-  const addresses = deployments[String(chainId)] || {};
-  const contracts = {};
+export function getDeployment(contractName) {
+  return contracts[contractName] || null;
+}
 
-  // Build deployment info for each contract
-  for (const contractName in abis) {
-    // Try to find deployment address using common naming patterns
-    // Pattern 1: ContractNameModule#ContractName (Hardhat Ignition default)
-    const moduleKey = `${contractName}Module#${contractName}`;
-    // Pattern 2: Just the contract name
-    const directKey = contractName;
-
-    contracts[contractName] = {
-      abi: abis[contractName],
-      address: addresses[moduleKey] || addresses[directKey] || null,
-      name: contractName,
-      description: `${contractName} contract`,
-    };
-  }
-
-  return contracts;
+/**
+ * Get all contract names
+ * @returns {string[]} Array of contract names
+ */
+export function getDeploymentNames() {
+  return Object.keys(contracts);
 }

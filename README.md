@@ -27,11 +27,10 @@ npm install
 npm run chain --workspace=hardhat
 ```
 
-3. Deploy contracts and build exports (in a separate terminal):
+3. Deploy contracts (in a separate terminal):
 
 ```sh
 npm run deploy --workspace=hardhat
-npm run build --workspace=hardhat
 ```
 
 4. Configure frontend environment variables (optional):
@@ -51,23 +50,28 @@ npm run dev --workspace=frontend
 
 When working with smart contracts, follow this development flow:
 
-1. **Create/update smart contract** in the `/contracts` folder
-2. **Update deployment module** in `/ignition/modules/` using Hardhat Ignition
-3. **Compile contracts**: `npm run compile --workspace=hardhat`
-4. **Deploy contracts**: `npm run deploy --workspace=hardhat`
-5. **Build exports**: `npm run build --workspace=hardhat`
+1. **Create/update smart contract** in the `hardhat/contracts/` folder
+2. **Create/update deployment script** in `hardhat/scripts/` (see `deploy.js` example)
+3. **Compile contracts**: `npm run compile --workspace=hardhat` (generates ABIs in `hardhat/abi/`)
+4. **Deploy contract**: `npm run deploy --workspace=hardhat`
+   - Deployment script saves data to `hardhat/dist/{ContractName}.json`
+   - Format: `{ address, abi, chainId, network, deployedAt }`
 
-After running these commands, the contract artifacts will be available for importing from `ethereum-scaffold-hardhat` module.
+After deployment, contract data is automatically available to the frontend via the `ethereum-scaffold-contracts` package:
+
+```javascript
+import { getDeployment } from 'ethereum-scaffold-contracts';
+
+const { address, abi } = getDeployment('ContractName');
+const contract = new ethers.Contract(address, abi, signer);
+```
 
 ### Available Scripts
 
 #### Hardhat
 
-- `npm run chain --workspace=hardhat` - Start local Hardhat node
-- `npm run compile --workspace=hardhat` - Compile smart contracts
-- `npm run deploy:test --workspace=hardhat` - Deploy contracts using Hardhat Ignition to Hardhat virtual network
-- `npm run deploy --workspace=hardhat` - Deploy contracts using Hardhat Ignition to default network (localhost)
-- `npm run build --workspace=hardhat` - Build contract exports
+- `npm run compile --workspace=hardhat` - Compile smart contracts (generates ABIs in `abi/`)
+- `npm run deploy --workspace=hardhat` - Deploy contracts
 
 ### Frontend
 
@@ -80,15 +84,13 @@ After running these commands, the contract artifacts will be available for impor
 
 ```
 hardhat/
-└──contracts/          # Smart contracts
-   └── NFTMarketplace.sol
-
-   ignition/           # Hardhat Ignition deployment
-   ├── modules/
-   │   └── NFTMarketplace.js
-   └── deployments/    # Deployment artifacts
-
-   hardhat.config.js   # Hardhat configuration
+├── contracts/         # Smart contracts
+├── scripts/           # Deployment scripts
+│   └── deploy.js
+├── dist/              # Deployment data (auto-generated on deploy)
+├── abi/               # Contract ABIs (auto-generated on compile)
+├── hardhat.config.js  # Hardhat configuration
+└── index.js           # Package exports
 
 frontend/
 └──src/                # Frontend source code

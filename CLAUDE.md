@@ -44,11 +44,8 @@ npm run dev --workspace=frontend
 # Compile contracts (generates ABIs to hardhat/abi/)
 npm run compile --workspace=hardhat
 
-# Deploy to localhost using Hardhat Ignition
-npm run deploy --workspace=hardhat
-
-# Deploy to test network (virtual Hardhat network)
-npm run deploy:test --workspace=hardhat
+# Deploy contracts using deployment scripts
+npx hardhat run scripts/deploy.js --network arcology
 ```
 
 **Frontend Development:**
@@ -104,9 +101,10 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 **Data Flow:**
 
-1. Frontend imports contract ABIs from `ethereum-scaffold-contracts` npm package (hardhat workspace)
-2. Contract addresses loaded from deployment artifacts via `getDeployments()` function
-3. No local ABI storage - all ABIs come from hardhat workspace exports
+1. Deployment scripts save contract address + ABI to `hardhat/dist/{ContractName}.json`
+2. Frontend imports contract data from `ethereum-scaffold-contracts` npm package (hardhat workspace)
+3. Contract data accessed via `getDeployment(contractName)` function from hardhat module
+4. No local ABI storage - all contract data comes from hardhat workspace exports
 
 ### Key Arcology-Specific Patterns
 
@@ -230,7 +228,7 @@ The system is designed around three core Solidity contracts using Arcology's con
 2. **Non-Atomic Operations**: Payment and NFT mint must be in same transaction
 3. **Fixed Tier Assumption**: All events must have exactly 3 tiers (can have 0 capacity for unused tiers)
 4. **Refund Deadline**: Frontend must enforce 12-hour cutoff before event timestamp
-5. **ABI Synchronization**: Always run `npm run deploy --workspace=hardhat` after contract changes to regenerate ABIs for frontend
+5. **Contract Deployment Synchronization**: After contract changes, re-run deployment scripts to update dist/{ContractName}.json files for frontend consumption
 
 ## Network Configuration
 

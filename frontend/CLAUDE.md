@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Prerequisites for Development
 
 - Node.js v20+ and npm
-- Running Hardhat node (from `../hardhat` directory): `npm run chain`
-- Deployed smart contracts with ABIs exported: `npm run deploy && npm run build`
+- Running Arcology network or local development node: `npm run chain` (from hardhat directory)
+- Deployed smart contracts with ABIs and addresses exported: `npm run deploy` (from hardhat directory)
 
 ## Architecture Overview
 
@@ -26,12 +26,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Application Flow
 
-1. **Contract Discovery**: `src/lib/contracts.js` dynamically loads contract ABIs and addresses based on chainId using `getDeployments()` from the hardhat module
+1. **Contract Discovery**: `src/lib/contracts.js` loads contract ABIs and addresses using `getDeployment(contractName)` from the `ethereum-scaffold-contracts` package (hardhat workspace)
 
 ### Data Dependencies
 
-- Contract ABIs are imported as npm package from `../hardhat` project
-- No ABI files stored locally - all come from `ethereum-scaffold-contracts` package
+- Contract deployment data imported from `ethereum-scaffold-contracts` package (hardhat workspace)
+- Each contract has: `{ address: "0x...", abi: [...] }`
+- Data sourced from `hardhat/dist/{ContractName}.json` files created by deployment scripts
+- No local ABI storage - all contract data comes from hardhat workspace exports
+
+### Hardhat Module API
+
+The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
+
+- `getDeployment(contractName)` - Returns `{ address, abi }` for a specific contract
+- `getDeployments()` - Returns object with all contracts: `{ ContractName: { address, abi }, ... }`
+- `getDeploymentNames()` - Returns array of deployed contract names
 
 ## Code Conventions
 
