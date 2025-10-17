@@ -386,33 +386,15 @@ sequenceDiagram
 
 ## 6. Testing Strategy
 
-### 6.1 Smart Contract Testing (Hardhat v3 + Solidity)
+### 6.1 Smart Contract Testing (Hardhat v3 + Solidity/JavaScript)
 
-```solidity
-contract LoadSimulator {
-	using Multiprocess for Multiprocess;
+**Native Testing**: Prefer native Solidity tests over JavaScript tests.
 
-	function simulateBatch(uint256 purchases, uint256 refunds) {
-		Multiprocess mp = new Multiprocess(purchases + refunds);
+**CRITICAL CONSTRAINT:** Arcology's concurrent library operations (U256Cumulative, concurrent arrays, etc.) **CANNOT** be tested using Solidity tests. All contract tests involving concurrent structures must be written in **JavaScript using Hardhat's testing framework**.
 
-		// Add purchase jobs
-		for(uint i = 0; i < purchases; i++) {
-			mp.addJob(gasLimit, 0, ticketingCore,
-				abi.encodeWithSignature("purchaseTicket(uint256,string)",
-				eventId, randomTier()));
-		}
+**Rationale:** Solidity tests run in a simulated EVM environment that doesn't support Arcology's parallel execution primitives. Only JavaScript tests running against actual Arcology nodes (local or DevNet) can properly validate concurrent behavior.
 
-		// Add refund jobs (10% of previous batch)
-		for(uint i = 0; i < refunds; i++) {
-			mp.addJob(gasLimit, 0, ticketingCore,
-				abi.encodeWithSignature("refundTicket(uint256)",
-				previousBatchTokens[random() % previousBatchTokens.length]));
-		}
-
-		mp.run(); // Execute all jobs in parallel
-	}
-}
-```
+**Load Simulation:** Load testing will be implemented using JavaScript test scripts that spawn parallel transactions, not Solidity-based LoadSimulator contracts.
 
 ## 7. Implementation Priorities
 

@@ -13,6 +13,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Verify library import works in test contract
 
 - [x] **Task 1.1.2**: Configure Hardhat for Arcology Network
+
   - Update `hardhat/hardhat.config.js` with Arcology DevNet RPC endpoint
   - Test connection to Arcology DevNet
 
@@ -37,7 +38,9 @@ This document breaks down the PRD into actionable development tasks organized by
   - Initial supply minting
   - Public mint function for testing
 
-- [x] **Task 1.2.4**: Write unit tests for ConcurrentERC20
+- [x] **Task 1.2.4**: Write unit tests for ConcurrentERC20 (JavaScript/Solidity)
+
+  - **CRITICAL:** Use Solidity tests for generic test cases and JavaScript for Arcology concurrent library involving behavior
   - Test basic transfers between accounts
   - Test approval and transferFrom flow
   - Test parallel transfers (multiple simultaneous transfers)
@@ -72,7 +75,9 @@ This document breaks down the PRD into actionable development tasks organized by
   - Add access control (only owner or approved can transfer)
   - Ensure ERC-721 standard compliance
 
-- [ ] **Task 1.3.5**: Write unit tests for ConcurrentERC721
+- [ ] **Task 1.3.5**: Write unit tests for ConcurrentERC721 (JavaScript/Solidity)
+
+  - **CRITICAL:** Use Solidity tests for generic test cases and JavaScript for Arcology concurrent library involving behavior
   - Test minting by authorized addresses
   - Test burn functionality
   - Test parallel minting (multiple simultaneous mints)
@@ -169,8 +174,9 @@ This document breaks down the PRD into actionable development tasks organized by
   - `canRefund(uint256 eventId)` - return boolean
   - `getAvailableRevenue(uint256 eventId)` - return withdrawable amount
 
-- [ ] **Task 1.4.8**: Write comprehensive unit tests for TicketingCore (using Solidity)
+- [ ] **Task 1.4.8**: Write comprehensive unit tests for TicketingCore (using Solidity/JavaScript)
 
+  - **CRITICAL:** Use Solidity tests for generic test cases and JavaScript for Arcology concurrent library involving behavior
   - Test event creation with valid parameters
   - Test event creation with invalid parameters (past timestamp, zero capacity)
   - Test single ticket purchase
@@ -187,7 +193,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Test withdrawal by non-organizer (should revert)
   - Verify all gas costs meet targets
 
-- [ ] **Task 1.4.9**: Integration tests for full flow (using Solidity)
+- [ ] **Task 1.4.9**: Integration tests for full flow (using JavaScript)
 
   - Deploy ConcurrentERC20, mint tokens to test accounts
   - Create event with 3 tiers
@@ -197,32 +203,28 @@ This document breaks down the PRD into actionable development tasks organized by
   - Organizer withdraws revenue
   - Verify final state consistency
 
-### 1.5 Load Testing Infrastructure
+### 1.5 Load Testing Infrastructure (JavaScript)
 
-- [ ] **Task 1.5.1**: Create LoadSimulator.sol contract
+- [ ] **Task 1.5.1**: Create LoadSimulator.test.js test
 
-  - Create `hardhat/contracts/test/LoadSimulator.sol`
-  - Import Arcology's Multiprocess library
+  - Create `hardhat/test/LoadSimulator.test.js`
   - Implement `simulatePurchaseBatch()` function
   - Implement `simulateRefundBatch()` function
 
 - [ ] **Task 1.5.2**: Implement batch purchase simulation
 
-  - Use Multiprocess to create parallel purchase jobs
   - Random tier selection weighted by capacity
-  - Track successful/failed transactions
-  - Calculate actual TPS achieved
-  - Measure gas consumption per operation
+  - Validate 100% success rate
 
 - [ ] **Task 1.5.3**: Implement batch refund simulation
 
   - Select 10% of previous batch tickets randomly
   - Create parallel refund jobs
-  - Track success rate
+  - Validate 100% success rate
 
 - [ ] **Task 1.5.4**: Create load test script
-  - Script to run 1000+ parallel transactions every 10 seconds
-  - Continue until 25,000 tickets sold
+  - Script to run 100 parallel transactions every 5 seconds
+  - Continue until 2,000 tickets sold (~1 minute)
   - Collect metrics: TPS, gas costs, conflict rate
   - Generate performance report
 
