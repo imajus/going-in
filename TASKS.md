@@ -18,26 +18,26 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 1.2 ConcurrentERC20 Implementation
 
-- [ ] **Task 1.2.1**: Create ConcurrentERC20.sol contract
+- [x] **Task 1.2.1**: Create ConcurrentERC20.sol contract
 
   - Create `hardhat/contracts/ConcurrentERC20.sol`
   - Import Arcology's concurrent library
   - Follow ds-token pattern from https://github.com/arcology-network/examples/blob/main/ds-token/contracts/Token.sol
 
-- [ ] **Task 1.2.2**: Implement core ERC20 functions with U256Cumulative
+- [x] **Task 1.2.2**: Implement core ERC20 functions with U256Cumulative
 
   - Implement `totalSupply()` using U256Cumulative
   - Implement `balanceOf()` with concurrent balance tracking
   - Implement `transfer()` with parallel-safe balance updates
   - Implement `approve()` and `transferFrom()` for allowances
 
-- [ ] **Task 1.2.3**: Add constructor and mint functionality
+- [x] **Task 1.2.3**: Add constructor and mint functionality
 
   - Constructor with name, symbol, decimals
   - Initial supply minting
   - Public mint function for testing
 
-- [ ] **Task 1.2.4**: Write unit tests for ConcurrentERC20
+- [x] **Task 1.2.4**: Write unit tests for ConcurrentERC20
   - Test basic transfers between accounts
   - Test approval and transferFrom flow
   - Test parallel transfers (multiple simultaneous transfers)

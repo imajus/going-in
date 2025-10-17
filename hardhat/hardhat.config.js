@@ -1,7 +1,5 @@
-import HardhatEthers from '@nomicfoundation/hardhat-ethers';
-import HardhatIgnition from '@nomicfoundation/hardhat-ignition-ethers';
 import HardhatABIExporter from '@solidstate/hardhat-abi-exporter';
-import HardhatVerify from '@nomicfoundation/hardhat-verify';
+import hardhatToolboxMochaEthers from '@nomicfoundation/hardhat-toolbox-mocha-ethers';
 import { execSync } from 'child_process';
 
 const ip = execSync('npm run ip --silent', { encoding: 'utf-8' }).trim();
@@ -35,7 +33,7 @@ export default {
       },
     },
   },
-  plugins: [HardhatEthers, HardhatIgnition, HardhatABIExporter, HardhatVerify],
+  plugins: [HardhatABIExporter, hardhatToolboxMochaEthers],
   defaultNetwork: 'arcology',
   networks: {
     arcology: {
