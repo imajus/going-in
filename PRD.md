@@ -50,7 +50,7 @@ graph TB
 
         subgraph "Core Contracts"
             F[TicketingCore.sol]
-            G[ConcurrentTicketNFT.sol]
+            G[ConcurrentERC721.sol]
             H[ConcurrentERC20.sol]
         end
 
@@ -82,35 +82,40 @@ graph TB
 #### 2.2.1 Core Contracts
 
 1. **TicketingCore.sol**
-   - Event management with fixed 3-tier structure
+   - Event management with dynamic tier structure
+   - Single payment token configured at deployment (constructor parameter)
    - Parallel-safe ticket sales using U256Cumulative
    - Unlimited revenue withdrawals for organizers
    - Time-locked refund mechanism (12 hours before event)
-2. **ConcurrentTicketNFT.sol** (Based on Arcology patterns)
-   - Custom ERC-721 implementation with concurrent structures
+2. **ConcurrentERC721.sol** (Generic ERC-721 with Arcology patterns)
+   - Pure ERC-721 implementation with concurrent structures
    - Uses U256Cumulative for total supply tracking
-   - Lazy minting on purchase
-   - Burn capability for refunds
+   - Generic mint() and burn() functions
    - Parallel-safe transfer operations
+   - Reusable for any NFT use case
 3. **ConcurrentERC20.sol** (Following ds-token pattern from Arcology examples)
    - Custom ERC-20 implementation using Arcology's concurrent library
    - U256Cumulative for balance tracking
    - Parallel-safe transfers and approvals
    - Based on: https://github.com/arcology-network/examples/blob/main/ds-token/contracts/Token.sol
 
-#### 2.2.2 Fixed Tier Structure
+#### 2.2.2 Dynamic Tier Structure
 
-Each event has exactly 3 tiers with the following properties:
+Each event has a dynamic number of tiers (minimum 1, recommended maximum 5 for gas efficiency) with the following properties:
 
-- **Tier 1:** Premium (capacity, price)
-- **Tier 2:** Standard (capacity, price)
-- **Tier 3:** General (capacity, price)
+Each tier contains:
+- **Name**: Tier name (e.g., "VIP", "Premium", "General Admission") - also used as the NFT collection name
+- **Capacity**: Maximum number of tickets available in this tier
+- **Price**: Price per ticket in ERC-20 tokens
 
 Each tier uses:
 
 - U256Cumulative for sold count (0 to capacity bounds)
 - Fixed price in ERC-20 tokens
+- Dedicated ConcurrentERC721 contract (one NFT collection per tier)
 - Capacity limit enforced by cumulative upper bound
+
+**NFT Deployment**: TicketingCore automatically deploys separate ConcurrentERC721 contracts (one per tier) during event creation. Each NFT collection uses the tier name for its name and an auto-generated symbol (e.g., "VIP" tier → "VIP" name, "TICK-VIP" symbol).
 
 ### 2.3 Project Structure
 
@@ -120,7 +125,7 @@ Root/
 ├── hardhat/                  # Smart contracts workspace
 │   ├── contracts/            # Solidity contracts
 │   │   ├── TicketingCore.sol
-│   │   ├── ConcurrentTicketNFT.sol
+│   │   ├── ConcurrentERC721.sol
 │   │   └── ConcurrentERC20.sol
 │   ├── ignition/
 │   │   ├── modules/          # Hardhat Ignition deployment modules
@@ -168,18 +173,19 @@ Root/
 
 - **Input Parameters:**
   - Event name, venue, timestamp
-  - Fixed 3 tiers with:
-    - Tier 1: Capacity (uint256), price (uint256)
-    - Tier 2: Capacity (uint256), price (uint256)
-    - Tier 3: Capacity (uint256), price (uint256)
-  - Payment token address (standard ERC-20)
+  - Dynamic array of tiers (minimum 1 tier), each with:
+    - name: Tier name (e.g., "VIP", "Premium") - used as both tier identifier and NFT collection name
+    - capacity: Maximum tickets in this tier
+    - price: Price per ticket in the contract's payment token
 - **Constraints:**
   - Event must be >12 hours in future
-  - Tier capacities must be > 0
+  - At least 1 tier required
+  - Each tier capacity must be > 0
+  - Recommended maximum: 5 tiers (gas efficiency)
+  - Tier names must be unique within event
 - **Output:**
   - Event ID for reference
-  - Deployed NFT contract address
-  - Gas cost: ~3-4M gas for 3-tier deployment
+- **Note:** Payment token is set at TicketingCore deployment (constructor parameter), ensuring all events use the same payment token
 
 #### 3.1.2 Revenue Withdrawal
 
@@ -220,7 +226,7 @@ sequenceDiagram
     Frontend->>TicketingCore: purchaseTicket(tierIdx)
     TicketingCore->>TicketingCore: tier.sold.add(1)
     TicketingCore->>ERC20: transferFrom(user, contract, price)
-    TicketingCore->>NFT: mintTicket(user)
+    TicketingCore->>NFT: mint(user)
     NFT-->>TicketingCore: tokenId
     TicketingCore-->>Frontend: Purchase successful
     Frontend-->>User: Display NFT ticket
@@ -292,14 +298,14 @@ sequenceDiagram
 
 - **Deployment Costs:**
   - Main contract: <5M gas
-  - NFT contract per event: <3M gas
+  - NFT contracts per event: 3 × ~3M gas = ~9M gas total
 - **Operation Costs:**
   - Purchase: <200k gas
   - Refund: <150k gas
   - Withdrawal: <50k gas per transaction
 - **Optimization Techniques:**
   - Lazy minting for NFTs
-  - Fixed 3-tier structure (no dynamic arrays)
+  - Dynamic tier array (storage overhead mitigated by bounded max of 5 tiers)
   - Minimal storage writes using cumulative structures
 
 ---
@@ -330,16 +336,16 @@ sequenceDiagram
 - Extensive unit testing of token operations
 - Test parallel transfers and approvals thoroughly
 
-#### 5.1.3 Fixed Tier Structure Limitations
+#### 5.1.3 Dynamic Tier Array Management
 
-**Risk:** 3-tier structure might not fit all event types
+**Risk:** Dynamic array operations with concurrent access could cause conflicts
 
 **Mitigation:**
 
-- Allow flexible naming for each tier
-- Support zero capacity for unused tiers
-- Clear documentation on tier configuration
-- Consider dynamic tiers in v2
+- Use array length only during event creation (no concurrent access)
+- Access tiers by index during purchases (no structural modifications)
+- Validate tier index bounds in all functions
+- Document recommended maximum of 5 tiers for gas efficiency
 
 ### 5.2 Frontend Integration Challenges
 
@@ -413,8 +419,8 @@ contract LoadSimulator {
 ### Phase 1: Core Smart Contracts (Week 1)
 
 1. Implement ConcurrentERC20 following ds-token pattern
-2. Implement ConcurrentTicketNFT with lazy minting
-3. Develop TicketingCore with 3-tier structure
+2. Implement ConcurrentERC721 as generic ERC-721 with Arcology concurrency
+3. Develop TicketingCore with dynamic tier structure (manages ticketing logic)
 4. Write comprehensive Solidity tests
 
 ### Phase 2: Frontend Development (Week 2)
@@ -438,7 +444,7 @@ contract LoadSimulator {
 ### A. Gas Estimation Calculations
 
 ```
-Event Creation: 3M (base) + 1M (NFT contract)
+Event Creation: 3M (base) + 3M × 3 (NFT contracts) = ~12M total
 Ticket Purchase: 150k (logic) + 50k (NFT mint)
 Refund: 100k (logic) + 30k (NFT burn)
 Withdrawal: 50k (ERC-20 transfer)

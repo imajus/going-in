@@ -110,8 +110,8 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 **Official Documentation:**
 
-- **LLM-Friendly Arcology Docs**: https://docs.arcology.network/main/llms-full.txt
-- Use this URL to fetch comprehensive Arcology-specific information when implementing concurrent contracts
+- **LLM-Friendly Arcology Docs**: https://docs.arcology.network/main/llms-full.txt - use this URL to fetch comprehensive Arcology-specific information when implementing concurrent contracts
+- **Hardhaat Solidity Testing Docs**: https://hardhat.org/docs/getting-started#solidity-tests
 
 **U256Cumulative Usage:**
 
