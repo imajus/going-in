@@ -1,9 +1,7 @@
 import HardhatABIExporter from '@solidstate/hardhat-abi-exporter';
 import hardhatToolboxMochaEthers from '@nomicfoundation/hardhat-toolbox-mocha-ethers';
-import { execSync } from 'child_process';
 
-const ip = execSync('npm run ip --silent', { encoding: 'utf-8' }).trim();
-
+/** @type {import('hardhat/dist/src/types/config').HardhatConfig} */
 export default {
   // solidity: {
   //   version: '0.8.20',
@@ -38,7 +36,7 @@ export default {
   networks: {
     arcology: {
       type: 'http',
-      url: `http://${ip}:8545`,
+      url: 'http://localhost:8545',
       accounts: [
         '5bb1315c3ffa654c89f1f8b27f93cb4ef6b0474c4797cf2eb40d1bdd98dc26e7',
         '2289ae919f03075448d567c9c4a22846ce3711731c895f1bea572cef25bb346f',
