@@ -12,16 +12,15 @@
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js --network arcology",
     "test": "hardhat test --network arcology",
-    "monitor": "arcology.net-monitor http://localhost:8545"
+    "monitor": "arcology.net-monitor http://arco.vps.webdock.cloud:8545"
   },
   "devDependencies": {
     "@arcologynetwork/concurrentlib": "^2.2.0",
     "@arcologynetwork/frontend-tools": "^1.0.3",
     "@arcologynetwork/frontend-util": "^1.0.3",
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
-    "@openzeppelin/contracts": "^5.4.0",
-    "@solidstate/hardhat-abi-exporter": "^3.0.0",
     "dotenv": "^17.2.1",
-    "hardhat": "^3.0.4"
+    "hardhat": "^3.0.4",
+    "@openzeppelin/contracts": "^4.9.6"
   }
 }

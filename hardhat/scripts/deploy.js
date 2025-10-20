@@ -1,15 +1,17 @@
-import { network } from 'hardhat';
+import hre from 'hardhat';
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import ParallelLikeModule from '../ignition/modules/ParallelLike.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Connect to Arcology network and get ethers instance
-const { ethers } = await network.connect();
-
 console.log('Deploying ParallelLike contract to Arcology network...');
+
+// Connect to network and get ethers instance
+const connection = await hre.network.connect();
+const { ethers } = connection;
 
 // Get the deployer signer
 const [deployer] = await ethers.getSigners();
@@ -19,13 +21,10 @@ console.log('Deploying with account:', deployer.address);
 const balance = await ethers.provider.getBalance(deployer.address);
 console.log('Account balance:', ethers.formatEther(balance), 'ETH');
 
-// Deploy the ParallelLike contract
-const ParallelLike = await ethers.getContractFactory('ParallelLike');
-const parallelLike = await ParallelLike.deploy();
+// Deploy the ParallelLike contract using Hardhat Ignition
+const { parallelLike } = await connection.ignition.deploy(ParallelLikeModule);
 
-// Wait for deployment to complete
-await parallelLike.waitForDeployment();
-
+// Get contract address (assuming getAddress() method exists on deployed instance)
 const contractAddress = await parallelLike.getAddress();
 console.log('ParallelLike deployed to:', contractAddress);
 
@@ -38,19 +37,11 @@ console.log('Contract address:', contractAddress);
 const chainId = (await ethers.provider.getNetwork()).chainId;
 console.log('Chain ID:', String(chainId));
 
-// Combine contract ABI and deployment address
-const contractArtifact = await import(
-  '../artifacts/contracts/ParallelLike.sol/ParallelLike.json',
-  {
-    assert: { type: 'json' },
-  }
-);
-
+// Extract ABI directly from the deployed contract instance
 const deploymentData = {
   address: contractAddress,
-  abi: contractArtifact.default.abi,
+  abi: JSON.parse(parallelLike.interface.formatJson()),
   chainId: Number(chainId),
-  network: network.name,
   deployedAt: new Date().toISOString(),
 };
 

@@ -26,13 +26,10 @@ going-in/
 # From repository root
 npm install
 
-# Start local Hardhat node (terminal 1)
-npm run chain --workspace=hardhat
-
-# Deploy contracts and build exports (terminal 2)
+# Deploy contracts to Arcology DevNet
 npm run deploy --workspace=hardhat
 
-# Start frontend dev server (terminal 3)
+# Start frontend dev server
 npm run dev --workspace=frontend
 ```
 
@@ -41,11 +38,14 @@ npm run dev --workspace=frontend
 **Smart Contract Development:**
 
 ```bash
-# Compile contracts (generates ABIs to hardhat/abi/)
+# Compile contracts
 npm run compile --workspace=hardhat
 
-# Deploy contracts using deployment scripts
-npx hardhat run scripts/deploy.js --network arcology
+# Deploy using Hardhat Ignition
+npm run deploy --workspace=hardhat
+
+# Monitor Arcology DevNet status
+npm run monitor --workspace=hardhat
 ```
 
 **Frontend Development:**
@@ -89,8 +89,6 @@ The system is designed around three core Solidity contracts using Arcology's con
    - U256Cumulative for balance tracking (enables parallel transfers)
    - Reference: https://github.com/arcology-network/examples/blob/main/ds-token/contracts/Token.sol
 
-**Current Status**: The repository contains a basic NFT marketplace contract (NFTMarketplace.sol) as a scaffold. The actual ticketing system contracts need to be implemented according to the PRD.
-
 ### Frontend Architecture
 
 - **Web3 Integration**: Reown AppKit (formerly WalletConnect) for wallet connection
@@ -105,6 +103,20 @@ The system is designed around three core Solidity contracts using Arcology's con
 2. Frontend imports contract data from `ethereum-scaffold-contracts` npm package (hardhat workspace)
 3. Contract data accessed via `getDeployment(contractName)` function from hardhat module
 4. No local ABI storage - all contract data comes from hardhat workspace exports
+
+**Hardhat Module API:**
+
+The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
+
+- `getDeployment(contractName)` - Returns `{ address, abi }` for a specific contract
+- `getDeployments()` - Returns object with all contracts: `{ ContractName: { address, abi }, ... }`
+- `getDeploymentNames()` - Returns array of deployed contract names
+
+**Deployment & ABI Management:**
+
+- **Hardhat Ignition**: Uses modules in `hardhat/ignition/modules/` for deterministic deployments
+- **ABI Extraction**: ABIs are extracted directly from deployed contract instances using `contract.interface.formatJson()`
+- **Contract Distribution**: Deployment scripts create `hardhat/dist/{ContractName}.json` with deployment addresses and ABIs for browser integration
 
 ### Key Arcology-Specific Patterns
 
@@ -183,18 +195,19 @@ The system is designed around three core Solidity contracts using Arcology's con
 **Critical Dependencies:**
 
 - Node.js: >=20 (enforced in package.json engines)
-- Solidity: ^0.8.20
+- Solidity: 0.8.19 (main contracts), 0.4.18 (WETH9 legacy contract)
 - Hardhat: ^3.0.4 with Ignition v3
 - OpenZeppelin Contracts: ^5.4.0
-- Arcology Concurrent Library: ^5.0.0 (to be added)
+- Arcology Concurrent Library: @arcologynetwork/concurrentlib@^2.2.0
 - ethers.js: ^6.15.0
 - React: ^18.2.0
 - Vite: ^7.1.3
 
 ## Code Conventions
 
-### Solidity
+### Solidity (0.8.19)
 
+- Compiler version: 0.8.19 with optimizer enabled (200 runs)
 - Imports order: OpenZeppelin → Arcology → Local files
 - Naming: PascalCase (contracts/structs), camelCase (functions/variables), UPPER_CASE (constants)
 - Security pattern: Checks-effects-interactions
@@ -215,12 +228,11 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 **Key Documents:**
 
+- `CLAUDE.md`: This file - complete development guide for Claude Code
 - `PRD.md`: Complete technical requirements and architecture
 - `docs/motivation.md`: Problem statement (ticketing platform failures)
 - `docs/solution.md`: Why blockchain + Arcology solves the problem
 - `docs/user-stories.md`: Feature requirements with journey maps
-- `frontend/CLAUDE.md`: Frontend-specific development guide
-- `hardhat/CLAUDE.md`: Smart contract development guide
 
 ## Common Pitfalls
 
@@ -234,27 +246,13 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 **Current Setup:**
 
-- Default: Hardhat local network (localhost:8545)
-- Target Production: Arcology Network (RPC to be configured)
+- **Arcology DevNet**: `http://arco.vps.webdock.cloud:8545` (Chain ID: 118)
+- Default network in hardhat.config.js: `arcology`
+- Pre-configured test accounts with private keys in config
 
-**For Arcology Deployment:**
+**Network Details:**
 
-1. Update `hardhat/hardhat.config.js` with Arcology RPC endpoint
-2. Configure network-specific gas settings
-3. Set up private keys securely (use environment variables)
-4. Test extensively on Arcology DevNet before mainnet
-
-## Implementation Status
-
-**Completed:**
-
-- Project scaffold with npm workspaces
-- Hardhat v3 + Ignition deployment setup
-- React + Vite frontend with Web3 integration
-- Basic NFT marketplace contract (placeholder)
-
-**TODO (from PRD priorities):**
-
-- Phase 1: Implement ConcurrentERC20, ConcurrentTicketNFT, TicketingCore contracts
-- Phase 2: Build event creation UI, purchase flow with tier selection, dashboard
-- Phase 3: Deploy to Arcology DevNet, implement load simulation, optimize gas
+- All contracts deploy to the remote Arcology DevNet
+- No local node required - DevNet is accessible at all times
+- Deployment artifacts stored in `hardhat/ignition/deployments/chain-118/`
+- Monitor DevNet health: `npm run monitor --workspace=hardhat`
