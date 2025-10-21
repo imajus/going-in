@@ -229,6 +229,61 @@ describe('ConcurrentERC20', function () {
       );
     });
 
+    it('should handle parallel transfers from the same sender', async function () {
+      const transferAmount = ethers.parseEther('10000');
+
+      // Mint tokens to the sender address
+      const mintAmount = transferAmount * 3n;
+      await (await token.mint(alice.address, mintAmount)).wait();
+
+      // Create recipient addresses
+      const recipients = await Promise.all([
+        ethers.Wallet.createRandom().address,
+        ethers.Wallet.createRandom().address,
+        ethers.Wallet.createRandom().address,
+      ]);
+
+      const initialBalance = await token.balanceOf(alice.address);
+
+      // Execute parallel transfers from sender to multiple recipients
+      const txs = [
+        frontendUtil.generateTx(
+          ([token, from, to, amount]) =>
+            token.connect(from).transfer(to, amount),
+          token,
+          alice,
+          recipients[0],
+          transferAmount
+        ),
+        frontendUtil.generateTx(
+          ([token, from, to, amount]) =>
+            token.connect(from).transfer(to, amount),
+          token,
+          alice,
+          recipients[1],
+          transferAmount
+        ),
+        frontendUtil.generateTx(
+          ([token, from, to, amount]) =>
+            token.connect(from).transfer(to, amount),
+          token,
+          alice,
+          recipients[2],
+          transferAmount
+        ),
+      ];
+
+      await frontendUtil.waitingTxs(txs);
+
+      // Verify all recipients received correct amounts
+      expect(await token.balanceOf(recipients[0])).to.equal(transferAmount);
+      expect(await token.balanceOf(recipients[1])).to.equal(transferAmount);
+      expect(await token.balanceOf(recipients[2])).to.equal(transferAmount);
+
+      // Verify sender's balance decreased correctly
+      expect(await token.balanceOf(alice.address)).to.equal(0);
+    });
+
     it('should handle parallel mints', async function () {
       const mint1 = ethers.parseEther('1000');
       const mint2 = ethers.parseEther('2000');
