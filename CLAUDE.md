@@ -299,3 +299,4 @@ const { contract } = await connection.ignition.deploy(ModuleName);
 - Deployment artifacts stored in `hardhat/ignition/deployments/chain-118/`
 - Monitor DevNet health: `npm run monitor --workspace=hardhat`
 - When debugging tests, use --grep argument to execute the test you are working on in isolation.
+- Use lodash-es helper functions when applicable, e.g. times()

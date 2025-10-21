@@ -8,19 +8,21 @@
     ".": "./index.js"
   },
   "scripts": {
-    "chain": "docker run -it --rm -p 8545:8545  arcologynetwork/devnet -f http://localhost:7545 -b http://localhost:3500 -s http://localhost:8545 -r true -m false",
+    "chain:start": "docker run -itd --rm --name arcology -p 8545:8545  arcologynetwork/devnet -f http://localhost:7545 -b http://localhost:3500 -s http://localhost:8545 -r true -m false",
+    "chain:stop": "docker stop arcology",
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js --network arcology",
     "test": "hardhat test --network arcology",
-    "monitor": "arcology.net-monitor http://arco.vps.webdock.cloud:8545"
+    "monitor": "arcology.net-monitor http://localhost:8545"
   },
   "devDependencies": {
     "@arcologynetwork/concurrentlib": "^2.2.0",
     "@arcologynetwork/frontend-tools": "^1.0.3",
     "@arcologynetwork/frontend-util": "^1.0.3",
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "@openzeppelin/contracts": "^4.9.6",
     "dotenv": "^17.2.1",
     "hardhat": "^3.0.4",
-    "@openzeppelin/contracts": "^4.9.6"
+    "lodash-es": "^4.17.21"
   }
 }

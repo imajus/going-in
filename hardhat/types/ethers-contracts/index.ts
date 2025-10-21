@@ -5,6 +5,7 @@ import type * as concurrentErc721Sol from './ConcurrentERC721.sol/index.js';
 export type { concurrentErc721Sol };
 export type { ConcurrentERC20 } from './ConcurrentERC20.js';
 export type { ParallelLike } from './ParallelLike.js';
+export type { TicketingCore } from './TicketingCore.js';
 export * as factories from './factories/index.js';
 export { ConcurrentERC20__factory } from './factories/ConcurrentERC20__factory.js';
 export type { ConcurrentERC721 } from './ConcurrentERC721.sol/ConcurrentERC721.js';
@@ -12,3 +13,4 @@ export { ConcurrentERC721__factory } from './factories/ConcurrentERC721.sol/Conc
 export type { IERC721Receiver } from './ConcurrentERC721.sol/IERC721Receiver.js';
 export { IERC721Receiver__factory } from './factories/ConcurrentERC721.sol/IERC721Receiver__factory.js';
 export { ParallelLike__factory } from './factories/ParallelLike__factory.js';
+export { TicketingCore__factory } from './factories/TicketingCore__factory.js';

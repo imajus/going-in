@@ -39,7 +39,8 @@ export default {
   networks: {
     arcology: {
       type: 'http',
-      url: 'http://arco.vps.webdock.cloud:8545',
+      // url: 'http://arco.vps.webdock.cloud:8545',
+      url: 'http://localhost:8545',
       accounts,
       chainId: 118,
     },

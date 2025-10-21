@@ -14,21 +14,25 @@ declare module "@nomicfoundation/hardhat-ethers/types" {
 getContractFactory(name: 'ConcurrentERC721', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.ConcurrentERC721__factory>
 getContractFactory(name: 'IERC721Receiver', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.IERC721Receiver__factory>
 getContractFactory(name: 'ParallelLike', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.ParallelLike__factory>
+getContractFactory(name: 'TicketingCore', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.TicketingCore__factory>
 
   getContractAt(name: 'ConcurrentERC20', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ConcurrentERC20>
 getContractAt(name: 'ConcurrentERC721', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ConcurrentERC721>
 getContractAt(name: 'IERC721Receiver', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.IERC721Receiver>
 getContractAt(name: 'ParallelLike', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.ParallelLike>
+getContractAt(name: 'TicketingCore', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.TicketingCore>
 
   deployContract(name: 'ConcurrentERC20', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ConcurrentERC20>
 deployContract(name: 'ConcurrentERC721', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ConcurrentERC721>
 deployContract(name: 'IERC721Receiver', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IERC721Receiver>
 deployContract(name: 'ParallelLike', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ParallelLike>
+deployContract(name: 'TicketingCore', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.TicketingCore>
 
   deployContract(name: 'ConcurrentERC20', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ConcurrentERC20>
 deployContract(name: 'ConcurrentERC721', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ConcurrentERC721>
 deployContract(name: 'IERC721Receiver', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.IERC721Receiver>
 deployContract(name: 'ParallelLike', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.ParallelLike>
+deployContract(name: 'TicketingCore', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.TicketingCore>
 
     // default types
     getContractFactory(

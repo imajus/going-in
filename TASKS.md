@@ -147,7 +147,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 1.4 TicketingCore Implementation
 
-- [ ] **Task 1.4.1**: Create TicketingCore.sol contract structure
+- [x] **Task 1.4.1**: Create TicketingCore.sol contract structure
 
   - Create `hardhat/contracts/TicketingCore.sol`
   - Import ReentrancyGuard from OpenZeppelin
@@ -156,7 +156,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Store payment token as immutable state variable
   - Define Event struct with dynamic tier structure
 
-- [ ] **Task 1.4.2**: Define data structures
+- [x] **Task 1.4.2**: Define data structures
 
   ```solidity
   struct Tier {
@@ -178,7 +178,7 @@ This document breaks down the PRD into actionable development tasks organized by
   }
   ```
 
-- [ ] **Task 1.4.3**: Implement event creation function
+- [x] **Task 1.4.3**: Implement event creation function
 
   - `createEvent()` with parameters: name, venue, timestamp, Tier[] memory tierConfigs (name, capacity, price for each)
   - Loop through tierConfigs array and deploy ConcurrentERC721 for each tier using `new ConcurrentERC721(tier.name, "TICKET")`
@@ -189,7 +189,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Store event in mapping
   - Emit EventCreated event
 
-- [ ] **Task 1.4.4**: Implement ticket purchase function
+- [x] **Task 1.4.4**: Implement ticket purchase function
 
   - `purchaseTicket(uint256 eventId, uint256 tierIdx)` function
   - Validate event exists and tier index is within bounds (< tiers.length)
@@ -202,7 +202,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Emit TicketPurchased event (include tier index, tier name, and NFT address)
   - Add ReentrancyGuard protection
 
-- [ ] **Task 1.4.5**: Implement refund mechanism
+- [x] **Task 1.4.5**: Implement refund mechanism
 
   - `refundTicket(uint256 eventId, uint256 tierIdx, uint256 tokenId)` function
   - Validate timestamp < (eventTime - 12 hours)
@@ -215,7 +215,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Emit TicketRefunded event
   - Add ReentrancyGuard protection
 
-- [ ] **Task 1.4.6**: Implement revenue withdrawal function
+- [x] **Task 1.4.6**: Implement revenue withdrawal function
 
   - `withdrawRevenue(uint256 eventId, uint256 amount)` function
   - Validate timestamp > (eventTime - 12 hours) - refund deadline passed
@@ -227,15 +227,15 @@ This document breaks down the PRD into actionable development tasks organized by
   - Add ReentrancyGuard protection
   - Allow unlimited withdrawals
 
-- [ ] **Task 1.4.7**: Implement getter functions
+- [x] **Task 1.4.7**: Implement getter functions
 
-  - `getEvent(uint256 eventId)` - return full event details
+  - `getEventDetails(uint256 eventId)` - return full event details
   - `getTierAvailability(uint256 eventId, uint256 tierIdx)` - return sold/capacity
   - `getRefundDeadline(uint256 eventId)` - return timestamp - 12 hours
   - `canRefund(uint256 eventId)` - return boolean
   - `getAvailableRevenue(uint256 eventId)` - return withdrawable amount
 
-- [ ] **Task 1.4.8**: Write comprehensive unit tests for TicketingCore (using Solidity/JavaScript)
+- [x] **Task 1.4.8**: Write comprehensive unit tests for TicketingCore (using Solidity/JavaScript)
 
   - **CRITICAL:** Use Solidity tests for generic test cases and JavaScript for Arcology concurrent library involving behavior
   - Test event creation with valid parameters
@@ -254,7 +254,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Test withdrawal by non-organizer (should revert)
   - Verify all gas costs meet targets
 
-- [ ] **Task 1.4.9**: Integration tests for full flow (using JavaScript)
+- [x] **Task 1.4.9**: Integration tests for full flow (using JavaScript)
 
   - Deploy ConcurrentERC20, mint tokens to test accounts
   - Create event with 3 tiers
@@ -266,9 +266,9 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 1.5 Load Testing Infrastructure (JavaScript)
 
-- [ ] **Task 1.5.1**: Create LoadSimulator.test.js test
+- [ ] **Task 1.5.1**: Create load.js script
 
-  - Create `hardhat/test/LoadSimulator.test.js`
+  - Create `hardhat/scripts/load.js`
   - Implement `simulatePurchaseBatch()` function
   - Implement `simulateRefundBatch()` function
 
@@ -283,7 +283,8 @@ This document breaks down the PRD into actionable development tasks organized by
   - Create parallel refund jobs
   - Validate 100% success rate
 
-- [ ] **Task 1.5.4**: Create load test script
+- [ ] **Task 1.5.4**: Create load script
+
   - Script to run 100 parallel transactions every 5 seconds
   - Continue until 2,000 tickets sold (~1 minute)
   - Collect metrics: TPS, gas costs, conflict rate
