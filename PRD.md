@@ -24,7 +24,7 @@ A blockchain-based ticketing platform leveraging Arcology's parallel execution c
 
 - **Project Structure:** npm workspaces monorepo (hardhat + frontend)
 - **Blockchain:** Arcology Network (EVM-compatible with parallel execution)
-- **Smart Contracts:** Solidity 0.8.20+ with Arcology Concurrent Library
+- **Smart Contracts:** Solidity 0.8.19 with Arcology Concurrent Library
 - **Development Framework:** Hardhat v3 with Ignition deployment system
 - **Frontend:** Vite + React + TailwindCSS
 - **Web3 Integration:** ethers.js v6 (direct wallet connection via BrowserProvider)
@@ -87,11 +87,14 @@ graph TB
    - Parallel-safe ticket sales using U256Cumulative
    - Unlimited revenue withdrawals for organizers
    - Time-locked refund mechanism (12 hours before event)
-2. **ConcurrentERC721.sol** (Generic ERC-721 with Arcology patterns)
-   - Pure ERC-721 implementation with concurrent structures
-   - Uses U256Cumulative for total supply tracking
+2. **ConcurrentERC721.sol** (Bare ERC-721 implementation, no OpenZeppelin)
+   - **Critical Constraint**: OpenZeppelin's ERC721 causes read-after-write conflicts in parallel execution
+   - **Token ID Generation**: `Runtime.uuid()` → conflict-free unique IDs
+   - **Ownership Tracking**: `U256Map` (tokenId → owner as uint160)
+   - **Balance Tracking**: `AddressU256Cum` (owner → U256Cumulative counter)
+   - **Approvals**: Standard mappings (single-tx operations, conflict-safe)
+   - **Parallel Safety**: Write-only mints, read-then-write transfers
    - Generic mint() and burn() functions
-   - Parallel-safe transfer operations
    - Reusable for any NFT use case
 3. **ConcurrentERC20.sol** (Following ds-token pattern from Arcology examples)
    - Custom ERC-20 implementation using Arcology's concurrent library
@@ -104,6 +107,7 @@ graph TB
 Each event has a dynamic number of tiers (minimum 1, recommended maximum 5 for gas efficiency) with the following properties:
 
 Each tier contains:
+
 - **Name**: Tier name (e.g., "VIP", "Premium", "General Admission") - also used as the NFT collection name
 - **Capacity**: Maximum number of tickets available in this tier
 - **Price**: Price per ticket in ERC-20 tokens
@@ -395,6 +399,33 @@ sequenceDiagram
 **Rationale:** Solidity tests run in a simulated EVM environment that doesn't support Arcology's parallel execution primitives. Only JavaScript tests running against actual Arcology nodes (local or DevNet) can properly validate concurrent behavior.
 
 **Load Simulation:** Load testing will be implemented using JavaScript test scripts that spawn parallel transactions, not Solidity-based LoadSimulator contracts.
+
+#### 6.1.4 Concurrent Conflict Testing
+
+**Critical Test**: Verify no read-write conflicts in parallel execution
+
+**Test Scenarios**:
+
+1. **Parallel Mints**: 100+ simultaneous mints → verify unique token IDs generated via Runtime.uuid()
+2. **Parallel Transfers**: Different tokens transferred in parallel → verify correctness
+3. **Parallel Burns**: Different tokens burned simultaneously → verify state consistency
+4. **Mixed Operations**: Mint + Transfer + Burn in parallel → verify state consistency
+5. **Stress Test**: 1000+ concurrent operations → verify zero conflicts
+
+**Success Criteria**:
+
+- All parallel transactions complete successfully
+- Zero transaction reverts due to state conflicts
+- State consistency maintained (totalSupply = minted - burned)
+- Token IDs are unique (no UUID collisions)
+- Balance totals match expected values after all operations
+
+**Testing Approach**:
+
+- Use Arcology's `@arcologynetwork/frontend-util` for parallel transaction generation
+- Run tests on Arcology DevNet only (cannot test in Hardhat local environment)
+- Monitor conflict detection rate (should be 0%)
+- Verify transaction throughput meets targets (100+ TPS on dev hardware)
 
 ## 7. Implementation Priorities
 

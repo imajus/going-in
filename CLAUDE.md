@@ -123,7 +123,29 @@ The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
 **Official Documentation:**
 
 - **LLM-Friendly Arcology Docs**: https://docs.arcology.network/main/llms-full.txt - use this URL to fetch comprehensive Arcology-specific information when implementing concurrent contracts
-- **Hardhaat Solidity Testing Docs**: https://hardhat.org/docs/getting-started#solidity-tests
+- **Hardhat Solidity Testing Docs**: https://hardhat.org/docs/getting-started#solidity-tests
+
+**Non-View Functions and Static Calls:**
+
+Functions that read from Arcology concurrent structures (U256Map, U256Cumulative) **cannot** be marked as `view` because the underlying `get()` operations are not view functions. When calling these functions in tests or frontend code, use `.staticCall`:
+
+```javascript
+// WRONG - Returns ContractTransactionResponse, not the actual value
+const owner = await nft.ownerOf(tokenId);
+
+// CORRECT - Returns the actual address value
+const owner = await nft.ownerOf.staticCall(tokenId);
+```
+
+**Common Non-View Functions in ConcurrentERC721:**
+- `ownerOf(uint256 tokenId)` → use `.staticCall` to get address
+- `getApproved(uint256 tokenId)` → use `.staticCall` to get address
+
+**View Functions (normal usage):**
+- `balanceOf(address owner)`
+- `totalSupply()`
+- `isApprovedForAll(address owner, address operator)`
+- `name()`, `symbol()`, `supportsInterface(bytes4)`
 
 **U256Cumulative Usage:**
 
@@ -175,6 +197,26 @@ The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
 
 ## Testing Strategy
 
+**CRITICAL:** Hardhat Ignition **CANNOT** be used in tests. Always use `ethers.getContractFactory()` and `.deploy()` for test deployments.
+
+**Native Testing**: Prefer native Solidity tests over JavaScript tests.
+
+**CRITICAL CONSTRAINT:** Arcology's concurrent library operations (U256Cumulative, U256Map, etc.) **CANNOT** be tested using Solidity tests. All contract tests involving concurrent structures must be written in **JavaScript using Hardhat's testing framework**.
+
+**Rationale:** Solidity tests run in a simulated EVM environment that doesn't support Arcology's parallel execution primitives. Only JavaScript tests running against actual Arcology nodes (local or DevNet) can properly validate concurrent behavior.
+
+### Test Deployment Pattern
+
+```javascript
+// CORRECT - Use in tests
+const ContractFactory = await ethers.getContractFactory('ContractName');
+const contract = await ContractFactory.deploy(constructorArg1, constructorArg2);
+await contract.waitForDeployment();
+
+// WRONG - Never use in tests
+const { contract } = await connection.ignition.deploy(ModuleName);
+```
+
 ### Load Testing Requirements
 
 **Simulation Parameters (from PRD):**
@@ -186,8 +228,8 @@ The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
 
 **Implementation Approach:**
 
-- Use Arcology's `Multiprocess` library for parallel job execution
-- Create `LoadSimulator.sol` contract to batch transactions
+- Use Arcology's `@arcologynetwork/frontend-util` for parallel transaction generation
+- Create parallel transactions using `frontendUtil.generateTx()` and `frontendUtil.waitingTxs()`
 - Test with aggressive concurrency to validate parallel safety
 
 ## Technology Versions
@@ -256,3 +298,4 @@ The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
 - No local node required - DevNet is accessible at all times
 - Deployment artifacts stored in `hardhat/ignition/deployments/chain-118/`
 - Monitor DevNet health: `npm run monitor --workspace=hardhat`
+- When debugging tests, use --grep argument to execute the test you are working on in isolation.

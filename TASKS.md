@@ -46,43 +46,104 @@ This document breaks down the PRD into actionable development tasks organized by
   - Test parallel transfers (multiple simultaneous transfers)
   - Test balance tracking accuracy under concurrent operations
 
-### 1.3 ConcurrentERC721 Implementation
+### 1.3 ConcurrentERC721 Implementation (Bare, No OpenZeppelin)
 
-- [ ] **Task 1.3.1**: Create ConcurrentERC721.sol contract
+- [x] **Task 1.3.1**: Create bare ConcurrentERC721.sol structure
 
   - Create `hardhat/contracts/ConcurrentERC721.sol`
-  - Import Arcology's concurrent library and OpenZeppelin ERC721 base
-  - Use U256Cumulative for totalSupply tracking
-  - Implement as generic, reusable ERC-721 (not ticketing-specific)
+  - Import Arcology concurrent libraries:
+    - `@arcologynetwork/concurrentlib/lib/runtime/Runtime.sol`
+    - `@arcologynetwork/concurrentlib/lib/map/U256.sol`
+    - `@arcologynetwork/concurrentlib/lib/map/AddressU256Cum.sol`
+    - `@arcologynetwork/concurrentlib/lib/commutative/U256Cum.sol`
+  - **NO OpenZeppelin dependency** (causes read-write conflicts)
+  - Define data structures: `U256Map _owners`, `AddressU256Cum _balances`, `U256Cumulative _totalSupply`
+  - Add minter access control (immutable address set in constructor)
 
-- [ ] **Task 1.3.2**: Implement generic minting mechanism
+- [x] **Task 1.3.2**: Implement conflict-free minting with Runtime.uuid()
 
-  - `mint(address to)` function with access control
-  - Generate sequential token IDs using U256Cumulative
-  - Emit Transfer event per ERC721 standard
+  - `mint(address to)` function with minter access control
+  - Generate tokenId: `uint256 tokenId = uint256(keccak256(Runtime.uuid()))`
+  - **Write-only operations** (no reads after writes):
+    - Set owner: `_owners.set(tokenId, uint256(uint160(to)))`
+    - Increment balance: `_balances.get(to).add(1)` (auto-initializes if needed)
+    - Increment supply: `_totalSupply.add(1)`
+  - Emit `Transfer(address(0), to, tokenId)`
+  - Return tokenId
+  - **Critical**: No reading of concurrent structures after writing them
 
-- [ ] **Task 1.3.3**: Implement burn functionality
+- [x] **Task 1.3.3**: Implement safe burn functionality
 
   - `burn(uint256 tokenId)` function
-  - Verify ownership before burning
-  - Decrement totalSupply using U256Cumulative
-  - Emit Transfer to zero address
+  - Read owner BEFORE any writes: `address owner = ownerOf(tokenId)`
+  - Verify ownership/approval using `_isApprovedOrOwner(msg.sender, tokenId)`
+  - **Write-only from here**:
+    - Delete ownership: `_owners.del(tokenId)`
+    - Decrement balance: `_balances.get(owner).sub(1)`
+    - Decrement supply: `_totalSupply.sub(1)`
+    - Clear approvals: `delete _tokenApprovals[tokenId]`
+  - Emit `Transfer(owner, address(0), tokenId)`
 
-- [ ] **Task 1.3.4**: Implement parallel-safe transfer operations
+- [x] **Task 1.3.4**: Implement conflict-free transfer operations
 
-  - Override `_transfer()` to use concurrent structures
-  - Implement `safeTransferFrom()` with conflict detection
-  - Add access control (only owner or approved can transfer)
-  - Ensure ERC-721 standard compliance
+  - `transferFrom(address from, address to, uint256 tokenId)` function
+  - Read owner ONCE at start: `address owner = ownerOf(tokenId)`
+  - Verify `owner == from`
+  - Verify authorization using `_isApprovedOrOwner(msg.sender, tokenId)`
+  - **Write-only updates**:
+    - Update owner: `_owners.set(tokenId, uint256(uint160(to)))`
+    - Decrement from balance: `_balances.get(from).sub(1)`
+    - Increment to balance: `_balances.get(to).add(1)`
+    - Clear approvals: `delete _tokenApprovals[tokenId]`
+  - Emit `Transfer(from, to, tokenId)`
+  - Implement `safeTransferFrom()` wrapper
 
-- [ ] **Task 1.3.5**: Write unit tests for ConcurrentERC721 (JavaScript/Solidity)
+- [x] **Task 1.3.5**: Implement approval mechanisms
 
-  - **CRITICAL:** Use Solidity tests for generic test cases and JavaScript for Arcology concurrent library involving behavior
-  - Test minting by authorized addresses
-  - Test burn functionality
-  - Test parallel minting (multiple simultaneous mints)
-  - Test transfer operations
-  - Test totalSupply accuracy under concurrent operations
+  - `approve(address to, uint256 tokenId)` - uses standard mapping (conflict-safe)
+  - `setApprovalForAll(address operator, bool approved)` - uses standard mapping
+  - `getApproved(uint256 tokenId)` view function
+  - `isApprovedForAll(address owner, address operator)` view function
+  - Internal helper: `_isApprovedOrOwner(address spender, uint256 tokenId)`
+
+- [x] **Task 1.3.6**: Implement view functions
+
+  - `ownerOf(uint256 tokenId)` → convert uint256 back to address:
+    - `address(uint160(_owners.get(tokenId)))`
+    - Require owner != address(0) (token exists)
+  - `balanceOf(address owner)` → `_balances.get(owner).get()`
+  - `totalSupply()` → `_totalSupply.get()`
+  - `name()` and `symbol()` - public string storage variables
+  - `supportsInterface(bytes4 interfaceId)` - ERC165 support
+
+- [x] **Task 1.3.7**: Write Solidity tests (minimal, conflict-free operations)
+
+  - Test metadata (name, symbol)
+  - Test minter access control (non-minter cannot mint)
+  - Test approval mechanisms (standard mappings, conflict-safe)
+  - Test interface support (ERC165, ERC721)
+  - **DO NOT test**: minting, transfers, burns (require Arcology DevNet)
+  - **Reason**: Solidity tests cannot access concurrent structures without conflicts
+
+- [x] **Task 1.3.8**: Write JavaScript tests for concurrent operations
+
+  - Test single mint → verify tokenId generated from uuid
+  - Test parallel mints (10-100) → verify:
+    - Unique token IDs (no collisions)
+    - Zero transaction reverts
+    - Correct balance increments
+    - Correct totalSupply (should equal number of mints)
+  - Test parallel transfers (different tokens, different owners) → verify:
+    - Ownership changes correctly
+    - Balance updates correctly
+    - No conflicts
+  - Test parallel burns (different tokens) → verify:
+    - Tokens deleted
+    - Balances decremented
+    - TotalSupply accurate (minted - burned)
+  - Test mixed operations (mint + transfer + burn in parallel) → verify state consistency
+  - Test UUID uniqueness: Mint 1000+ tokens, verify all IDs unique
+  - Verify zero conflict rate throughout all tests
 
 ### 1.4 TicketingCore Implementation
 
