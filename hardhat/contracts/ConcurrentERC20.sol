@@ -22,7 +22,11 @@ contract ConcurrentERC20 {
 
     // Events per ERC20 standard
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     /**
      * @notice Constructor to initialize token with name, symbol, and initial supply
@@ -30,7 +34,11 @@ contract ConcurrentERC20 {
      * @param _symbol Token symbol
      * @param _initialSupply Initial supply minted to contract deployer
      */
-    constructor(string memory _name, string memory _symbol, uint256 _initialSupply) {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _initialSupply
+    ) {
         name = _name;
         symbol = _symbol;
 
@@ -86,7 +94,10 @@ contract ConcurrentERC20 {
      * @param spender Spender address
      * @return Current allowance
      */
-    function allowance(address owner, address spender) public view returns (uint256) {
+    function allowance(
+        address owner,
+        address spender
+    ) public view returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -111,7 +122,11 @@ contract ConcurrentERC20 {
      * @param amount Amount to transfer
      * @return success True if transfer succeeded
      */
-    function transferFrom(address from, address to, uint256 amount) public returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public returns (bool) {
         uint256 currentAllowance = _allowances[from][msg.sender];
         require(currentAllowance >= amount, "ERC20: insufficient allowance");
 
@@ -155,7 +170,10 @@ contract ConcurrentERC20 {
         require(to != address(0), "ERC20: transfer to zero address");
 
         // Initialize sender balance if needed (should already exist)
-        require(address(_balances[from]) != address(0), "ERC20: insufficient balance");
+        require(
+            address(_balances[from]) != address(0),
+            "ERC20: insufficient balance"
+        );
 
         // Initialize recipient balance if needed
         if (address(_balances[to]) == address(0)) {

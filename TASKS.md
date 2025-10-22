@@ -296,21 +296,21 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.1 Web3 Integration Setup
 
-- [ ] **Task 2.1.1**: Set up Ethers BrowserProvider for wallet connection
+- [x] **Task 2.1.1**: Set up Ethers BrowserProvider for wallet connection
 
   - Create `frontend/src/lib/web3.ts` with Arcology network config
   - Implement wallet connection using `window.ethereum` and `ethers.BrowserProvider`
   - Add Arcology DevNet chain ID (118) and RPC endpoint
   - Handle wallet connection errors and chain switching
 
-- [ ] **Task 2.1.2**: Update contract loading utilities
+- [x] **Task 2.1.2**: Update contract loading utilities
 
   - Review existing `frontend/src/lib/contracts.ts`
   - Verify dynamic loading of deployed contract addresses works
   - Ensure ABIs are imported correctly from hardhat workspace exports
   - Test contract instance creation with ethers.js v6
 
-- [ ] **Task 2.1.3**: Create custom React hooks (TypeScript)
+- [x] **Task 2.1.3**: Create custom React hooks (TypeScript)
   - `useWallet.ts` - wallet connection state and actions using BrowserProvider
   - `useContract.ts` - contract instance management with TypeScript types
   - `useRealtime.ts` - block event listeners for live updates
@@ -318,7 +318,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.2 Event Creation Interface
 
-- [ ] **Task 2.2.1**: Update CreateEvent page with form implementation
+- [x] **Task 2.2.1**: Update CreateEvent page with form implementation
 
   - Review existing `frontend/src/pages/CreateEvent.tsx`
   - Implement form using react-hook-form with zod validation schema
@@ -331,7 +331,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Form validation: timestamp >12 hours future, at least 1 tier, capacities >0, unique tier names
   - Use shadcn/ui components: Form, Input, Button, Card, Label, Calendar
 
-- [ ] **Task 2.2.2**: Implement event creation transaction flow
+- [x] **Task 2.2.2**: Implement event creation transaction flow
 
   - Connect to TicketingCore contract using useContract hook
   - Read payment token address from contract for display
@@ -344,7 +344,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.3 Event Discovery & Browsing
 
-- [ ] **Task 2.3.1**: Update Home page with event listing
+- [x] **Task 2.3.1**: Update Home page with event listing
 
   - Review existing `frontend/src/pages/Home.tsx` (already has featured events structure)
   - Replace mock FEATURED_EVENTS with real blockchain data
@@ -353,7 +353,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Display event cards in grid layout (already implemented)
   - Real-time updates using block event listeners
 
-- [ ] **Task 2.3.2**: Enhance EventCard display
+- [x] **Task 2.3.2**: Enhance EventCard display
 
   - Update existing Card components in Home.tsx to use real data
   - Show tier pricing and availability (fetch from contract)
@@ -362,16 +362,9 @@ This document breaks down the PRD into actionable development tasks organized by
   - Show sold out badges dynamically based on actual tier availability
   - Use lucide-react icons (Calendar, MapPin, Ticket already in use)
 
-- [ ] **Task 2.3.3**: Add search and filter functionality
-  - Create search input using shadcn/ui Input component
-  - Filter by event status (upcoming, past, sold out)
-  - Filter by date range using shadcn/ui Calendar
-  - Sort by date, price, popularity
-  - Debounce search input for performance
-
 ### 2.4 Ticket Purchase Flow
 
-- [ ] **Task 2.4.1**: Update EventDetails page
+- [x] **Task 2.4.1**: Update EventDetails page
 
   - Review existing `frontend/src/pages/EventDetails.tsx`
   - Fetch event data using useParams to get event ID from URL
@@ -380,7 +373,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Real-time availability updates using useRealtime hook
   - Implement loading states with shadcn/ui Skeleton
 
-- [ ] **Task 2.4.2**: Implement purchase flow in EventDetails
+- [x] **Task 2.4.2**: Implement purchase flow in EventDetails
 
   - Add tier selection interface using shadcn/ui Tabs or Radio Group
   - Display price and availability for each tier
@@ -389,7 +382,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Purchase confirmation using shadcn/ui Alert Dialog
   - Use shadcn/ui Button with loading states
 
-- [ ] **Task 2.4.3**: Implement two-step purchase transaction
+- [x] **Task 2.4.3**: Implement two-step purchase transaction
 
   - Step 1: Check allowance, call `ERC20.approve(TicketingCore, price)` if needed
   - Show approval pending state with Progress indicator
@@ -400,7 +393,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Retry logic: 3 attempts with exponential backoff (1s, 2s, 4s)
   - Handle errors with user-friendly messages
 
-- [ ] **Task 2.4.4**: Create TierSelector component (TypeScript)
+- [x] **Task 2.4.4**: Create TierSelector component (TypeScript)
   - Create `frontend/src/components/TierSelector.tsx`
   - Dynamic visual representation of event tiers (renders 1-5 tiers)
   - Display tier names prominently using shadcn/ui Badge
@@ -411,7 +404,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.5 Refund Management
 
-- [ ] **Task 2.5.1**: Update MyTickets page
+- [x] **Task 2.5.1**: Update MyTickets page
 
   - Review existing `frontend/src/pages/MyTickets.tsx`
   - Fetch all NFTs owned by connected wallet (query each tier NFT contract)
@@ -421,7 +414,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Implement TypeScript interfaces for ticket data
   - Use @tanstack/react-query for data fetching
 
-- [ ] **Task 2.5.2**: Add refund functionality to MyTickets
+- [x] **Task 2.5.2**: Add refund functionality to MyTickets
 
   - Display refund deadline countdown using date-fns
   - Add refund button (enabled only before deadline) with shadcn/ui Button
@@ -430,7 +423,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Show transaction status with loading states
   - Display empty state when no tickets owned
 
-- [ ] **Task 2.5.3**: Implement refund transaction flow
+- [x] **Task 2.5.3**: Implement refund transaction flow
   - Call `TicketingCore.refundTicket(eventId, tierIdx, tokenId)`
   - Show transaction pending state with Button loading state
   - Display success notification with refunded amount using sonner toast
@@ -440,7 +433,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.6 Organizer Dashboard
 
-- [ ] **Task 2.6.1**: Update Dashboard page
+- [x] **Task 2.6.1**: Update Dashboard page
 
   - Review existing `frontend/src/pages/Dashboard.tsx`
   - Filter events by organizer (connected wallet address)
@@ -449,7 +442,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Use @tanstack/react-query for data fetching
   - Show loading states with shadcn/ui Skeleton
 
-- [ ] **Task 2.6.2**: Create EventAnalytics component (TypeScript)
+- [x] **Task 2.6.2**: Create EventAnalytics component (TypeScript)
 
   - Create `frontend/src/components/EventAnalytics.tsx`
   - Total tickets sold per tier with shadcn/ui Progress bars
@@ -459,7 +452,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Visual charts using recharts (bar/pie charts for tier distribution)
   - Use shadcn/ui Chart components for data visualization
 
-- [ ] **Task 2.6.3**: Create RevenueWithdrawal component (TypeScript)
+- [x] **Task 2.6.3**: Create RevenueWithdrawal component (TypeScript)
 
   - Create `frontend/src/components/RevenueWithdrawal.tsx`
   - Display available revenue prominently
@@ -469,7 +462,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Display withdrawal history using shadcn/ui Table
   - Use react-hook-form for withdrawal amount validation
 
-- [ ] **Task 2.6.4**: Implement withdrawal transaction flow
+- [x] **Task 2.6.4**: Implement withdrawal transaction flow
   - Call `TicketingCore.withdrawRevenue(eventId, amount)`
   - Client-side validation: amount <= available revenue
   - Show transaction pending state with Button loading state
@@ -479,7 +472,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.7 Navigation & Layout
 
-- [ ] **Task 2.7.1**: Update Navigation component
+- [x] **Task 2.7.1**: Update Navigation component
 
   - Review existing `frontend/src/components/Navigation.tsx`
   - Add wallet connection button using useWallet hook
@@ -490,7 +483,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Highlight active route using React Router useLocation
   - Use lucide-react icons for navigation items
 
-- [ ] **Task 2.7.2**: Review React Router setup
+- [x] **Task 2.7.2**: Review React Router setup
 
   - Review existing routes in `frontend/src/App.tsx`
   - Routes already configured: `/`, `/create`, `/events/:id`, `/tickets`, `/dashboard`
@@ -499,7 +492,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Redirect to home if wallet not connected for protected routes
   - Add route transitions if desired
 
-- [ ] **Task 2.7.3**: Verify shadcn/ui components setup
+- [x] **Task 2.7.3**: Verify shadcn/ui components setup
   - All shadcn/ui components already available in `frontend/src/components/ui/`
   - Button component with loading states ✓
   - Input component with validation ✓
@@ -510,7 +503,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.8 Real-time Updates & Optimization
 
-- [ ] **Task 2.8.1**: Implement block event listeners
+- [x] **Task 2.8.1**: Implement block event listeners
 
   - Create useRealtime hook with TypeScript
   - Listen to TicketPurchased events using ethers.js contract.on()
@@ -519,29 +512,13 @@ This document breaks down the PRD into actionable development tasks organized by
   - Update @tanstack/react-query cache on event detection
   - Clean up listeners on component unmount
 
-- [ ] **Task 2.8.2**: Implement optimistic UI updates
+- [x] **Task 2.8.2**: Implement optimistic UI updates
 
   - Use @tanstack/react-query optimistic updates
   - Immediately update UI on user action
   - Rollback on transaction failure
   - Show pending state during confirmation
   - Update cache with transaction result
-
-- [ ] **Task 2.8.3**: Add polling fallback
-
-  - Configure @tanstack/react-query with refetchInterval
-  - Poll event data every 3-5 seconds as fallback
-  - Disable polling when WebSocket events working
-  - Exponential backoff on errors using @tanstack/react-query retry config
-  - Automatic reconnection logic
-
-- [ ] **Task 2.8.4**: Optimize performance (TypeScript)
-  - Lazy load page components with React.lazy and Suspense
-  - Memoize expensive computations with useMemo and useCallback
-  - Debounce search/filter inputs using lodash-es debounce function
-  - Use @tanstack/react-query for automatic caching and deduplication
-  - Virtual scrolling for long lists if needed (consider react-virtualized)
-  - Code splitting with Vite dynamic imports
 
 ---
 

@@ -411,3 +411,4 @@ Three TypeScript config files:
 - Monitor DevNet health: `npm run monitor --workspace=hardhat`
 - When debugging tests, use --grep argument to execute the test you are working on in isolation.
 - Use lodash-es helper functions when applicable, e.g. times()
+- Events created via TicketingCore smart contract are assigned incremental ID which starts with 1.

@@ -13,7 +13,7 @@
     "chain:stop": "docker stop arcology",
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js --network arcology",
-    "reset": "hardhat ignition wipe chain-118 'TicketingCoreModule#TicketingCore'",
+    "reset": "rm -rf ignition/deployments/chain-118",
     "test": "hardhat test --network arcology",
     "monitor": "arcology.net-monitor http://localhost:8545"
   },

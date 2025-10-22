@@ -26,7 +26,7 @@ export default function Home() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src="/background.mp4" type="video/mp4" />
+            <source src={`/${import.meta.env.VITE_HERO_BACKGROUND_VIDEO ?? 'background.mp4'}`} type="video/mp4" />
           </video>
           {/* Dark overlay for text readability */}
           <div className="absolute inset-0 bg-black/50"></div>

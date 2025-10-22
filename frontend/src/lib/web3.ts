@@ -152,3 +152,8 @@ export function formatAddress(address: string): string {
   if (!address) return '';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
+
+export function formatTokenId(tokenId: bigint): string {
+  const raw = tokenId.toString();
+  return `#${raw.slice(0, 5)}...${raw.slice(-5)}`;
+}

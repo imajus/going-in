@@ -37,12 +37,12 @@ contract ConcurrentERC721 {
     string public symbol;
 
     // Concurrent data structures
-    U256Map private _owners;                         // tokenId → owner address (as uint160)
-    mapping(address => U256Cumulative) private _balances;  // owner → balance counter (U256Cumulative)
-    U256Cumulative private _totalSupply;             // Total number of tokens (minted - burned)
+    U256Map private _owners; // tokenId → owner address (as uint160)
+    mapping(address => U256Cumulative) private _balances; // owner → balance counter (U256Cumulative)
+    U256Cumulative private _totalSupply; // Total number of tokens (minted - burned)
 
     // Standard mappings for approvals (conflict-safe for single-tx operations)
-    mapping(uint256 => address) private _tokenApprovals;           // tokenId → approved address
+    mapping(uint256 => address) private _tokenApprovals; // tokenId → approved address
     mapping(address => mapping(address => bool)) private _operatorApprovals; // owner → operator → approved
 
     // Access control
@@ -50,9 +50,21 @@ contract ConcurrentERC721 {
 
     // ============ Events ============
 
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId
+    );
+    event Approval(
+        address indexed owner,
+        address indexed approved,
+        uint256 indexed tokenId
+    );
+    event ApprovalForAll(
+        address indexed owner,
+        address indexed operator,
+        bool approved
+    );
 
     // ============ Constructor ============
 
@@ -85,7 +97,7 @@ contract ConcurrentERC721 {
         return
             interfaceId == 0x01ffc9a7 || // ERC-165
             interfaceId == 0x80ac58cd || // ERC-721
-            interfaceId == 0x5b5e139f;   // ERC-721 Metadata
+            interfaceId == 0x5b5e139f; // ERC-721 Metadata
     }
 
     // ============ View Functions ============
@@ -104,7 +116,10 @@ contract ConcurrentERC721 {
      * @return Number of tokens owned
      */
     function balanceOf(address owner) public view returns (uint256) {
-        require(owner != address(0), "ConcurrentERC721: balance query for zero address");
+        require(
+            owner != address(0),
+            "ConcurrentERC721: balance query for zero address"
+        );
         // Return 0 if balance cumulative not initialized yet
         if (address(_balances[owner]) == address(0)) {
             return 0;
@@ -119,7 +134,10 @@ contract ConcurrentERC721 {
      */
     function ownerOf(uint256 tokenId) public returns (address) {
         address owner = address(uint160(_owners.get(tokenId)));
-        require(owner != address(0), "ConcurrentERC721: owner query for nonexistent token");
+        require(
+            owner != address(0),
+            "ConcurrentERC721: owner query for nonexistent token"
+        );
         return owner;
     }
 
@@ -129,7 +147,10 @@ contract ConcurrentERC721 {
      * @return Address approved to transfer this token
      */
     function getApproved(uint256 tokenId) public returns (address) {
-        require(_exists(tokenId), "ConcurrentERC721: approved query for nonexistent token");
+        require(
+            _exists(tokenId),
+            "ConcurrentERC721: approved query for nonexistent token"
+        );
         return _tokenApprovals[tokenId];
     }
 
@@ -139,7 +160,10 @@ contract ConcurrentERC721 {
      * @param operator Operator address
      * @return bool True if operator is approved
      */
-    function isApprovedForAll(address owner, address operator) public view returns (bool) {
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -233,7 +257,10 @@ contract ConcurrentERC721 {
         address owner = ownerOf(tokenId);
 
         // Verify 'from' matches actual owner
-        require(owner == from, "ConcurrentERC721: transfer from incorrect owner");
+        require(
+            owner == from,
+            "ConcurrentERC721: transfer from incorrect owner"
+        );
 
         // Verify authorization
         require(
@@ -273,7 +300,11 @@ contract ConcurrentERC721 {
      * @param to Recipient address
      * @param tokenId Token ID to transfer
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public {
         safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -284,20 +315,34 @@ contract ConcurrentERC721 {
      * @param tokenId Token ID to transfer
      * @param data Additional data to pass to receiver
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public {
         transferFrom(from, to, tokenId);
 
         // Check if recipient is a contract
         if (to.code.length > 0) {
             // Call onERC721Received if recipient is a contract
-            try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data) returns (bytes4 retval) {
+            try
+                IERC721Receiver(to).onERC721Received(
+                    msg.sender,
+                    from,
+                    tokenId,
+                    data
+                )
+            returns (bytes4 retval) {
                 require(
                     retval == IERC721Receiver.onERC721Received.selector,
                     "ConcurrentERC721: transfer to non ERC721Receiver implementer"
                 );
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert("ConcurrentERC721: transfer to non ERC721Receiver implementer");
+                    revert(
+                        "ConcurrentERC721: transfer to non ERC721Receiver implementer"
+                    );
                 } else {
                     assembly {
                         revert(add(32, reason), mload(reason))
@@ -357,12 +402,14 @@ contract ConcurrentERC721 {
      * @param owner Token owner (passed to avoid redundant ownerOf call)
      * @return bool True if spender is owner or approved
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId, address owner) internal returns (bool) {
-        return (
-            spender == owner ||
+    function _isApprovedOrOwner(
+        address spender,
+        uint256 tokenId,
+        address owner
+    ) internal returns (bool) {
+        return (spender == owner ||
             getApproved(tokenId) == spender ||
-            isApprovedForAll(owner, spender)
-        );
+            isApprovedForAll(owner, spender));
     }
 }
 

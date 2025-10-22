@@ -369,6 +369,6 @@
     }
   ],
   "chainId": 118,
-  "deployedAt": "2025-10-22T12:33:33.789Z",
+  "deployedAt": "2025-10-22T14:18:39.247Z",
   "note": "NFT contracts are deployed dynamically by TicketingCore for each event tier"
 }

@@ -12,7 +12,6 @@ export interface EventData {
   timestamp: bigint;
   organizer: string;
   tiers: TierData[];
-  revenue: bigint;
 }
 
 /**
@@ -23,7 +22,7 @@ export interface TierData {
   capacity: bigint;
   price: bigint;
   nftContract: string;
-  sold: bigint;
+  sold: bigint; // Fetched separately via getTierAvailability
 }
 
 /**
@@ -33,23 +32,51 @@ async function fetchEventDetails(
   contract: TicketingCore,
   eventId: bigint
 ): Promise<EventData | null> {
-  // Call getEventDetails - this returns a struct
-  const eventDetails = await contract.getEventDetails(eventId);
-  return {
-    id: eventDetails.id,
-    name: eventDetails.name,
-    venue: eventDetails.venue,
-    timestamp: eventDetails.timestamp,
-    organizer: eventDetails.organizer,
-    tiers: eventDetails.tiers.map((tier) => ({
-      name: tier.name,
-      capacity: tier.capacity,
-      price: tier.price,
-      nftContract: tier.nftContract,
-      sold: tier.sold,
-    })),
-    revenue: eventDetails.revenue,
-  };
+  try {
+    // Call getEventDetails - this returns basic event info without sold/revenue data
+    const eventDetails = await contract.getEventDetails(eventId);
+
+    // Fetch sold count for each tier using getTierAvailability
+    const tiersWithSold = await Promise.all(
+      eventDetails.tiers.map(async (tier: any, index: number) => {
+        try {
+          const [sold] = await contract.getTierAvailability.staticCall(eventId, BigInt(index));
+          return {
+            name: tier.name,
+            capacity: tier.capacity,
+            price: tier.price,
+            nftContract: tier.nftContract,
+            sold: sold,
+          };
+        } catch (error) {
+          console.error(`Error fetching sold count for tier ${index}:`, error);
+          return {
+            name: tier.name,
+            capacity: tier.capacity,
+            price: tier.price,
+            nftContract: tier.nftContract,
+            sold: BigInt(0),
+          };
+        }
+      })
+    );
+
+    return {
+      id: eventDetails.id,
+      name: eventDetails.name,
+      venue: eventDetails.venue,
+      timestamp: eventDetails.timestamp,
+      organizer: eventDetails.organizer,
+      tiers: tiersWithSold,
+    };
+  } catch (error: any) {
+    // Silently return null for non-existent events (expected behavior)
+    // Only log if it's not a CALL_EXCEPTION (which means event doesn't exist)
+    if (error.code !== 'CALL_EXCEPTION') {
+      console.error('Error fetching event details:', error);
+    }
+    return null;
+  }
 }
 
 /**
@@ -79,7 +106,7 @@ export function useEvents(maxEvents: number = 20) {
     queryFn: async () => {
       const events: EventData[] = [];
 
-      // Try fetching events with IDs from 0 to maxEvents
+      // Try fetching events with IDs starting from 1 (_nextEventId is initialized to 1 in constructor)
       for (let i = 1; i <= maxEvents; i++) {
         try {
           const event = await fetchEventDetails(contract, BigInt(i));
@@ -97,6 +124,48 @@ export function useEvents(maxEvents: number = 20) {
 
       return events;
     },
+    refetchInterval: 5000, // Refetch every 5 seconds
+    staleTime: 3000,
+  });
+}
+
+/**
+ * Hook to fetch events organized by a specific address
+ */
+export function useOrganizerEvents(organizerAddress: string | null, maxEvents: number = 20) {
+  const contract = useTicketingCore(false);
+
+  return useQuery({
+    queryKey: ['organizer-events', organizerAddress, maxEvents],
+    queryFn: async () => {
+      if (!organizerAddress) {
+        return [];
+      }
+
+      const events: EventData[] = [];
+
+      // Try fetching events with IDs starting from 1
+      for (let i = 1; i <= maxEvents; i++) {
+        try {
+          const event = await fetchEventDetails(contract, BigInt(i));
+          if (event && event.name) {
+            // Filter by organizer address (case-insensitive comparison)
+            if (event.organizer.toLowerCase() === organizerAddress.toLowerCase()) {
+              events.push(event);
+            }
+          } else {
+            // If we hit an empty event, we've likely reached the end
+            break;
+          }
+        } catch (error) {
+          // Event doesn't exist, stop searching
+          break;
+        }
+      }
+
+      return events;
+    },
+    enabled: organizerAddress !== null,
     refetchInterval: 5000, // Refetch every 5 seconds
     staleTime: 3000,
   });
@@ -239,7 +308,7 @@ export function useTokenBalance(address: string | null) {
       }
 
       try {
-        return await contract.balanceOf.staticCall(address);
+        return await contract.balanceOf(address);
       } catch (error) {
         console.error('Error fetching token balance:', error);
         return BigInt(0);
@@ -247,6 +316,109 @@ export function useTokenBalance(address: string | null) {
     },
     enabled: address !== null,
     refetchInterval: 3000,
+  });
+}
+
+/**
+ * User ticket data structure
+ */
+export interface UserTicket {
+  eventId: bigint;
+  tierIdx: bigint;
+  tokenId: bigint;
+  price: bigint;
+  nftContract: string;
+  tierName: string;
+  eventData: EventData | null;
+  refundEligible: boolean;
+  refundDeadline: bigint | null;
+}
+
+/**
+ * Hook to fetch all tickets owned by a user
+ */
+export function useUserTickets(userAddress: string | null) {
+  const contract = useTicketingCore(false);
+
+  return useQuery({
+    queryKey: ['user-tickets', userAddress],
+    queryFn: async () => {
+      if (!userAddress) {
+        return [];
+      }
+
+      try {
+        // Fetch latest block number (Arcology doesn't support "latest" as block specifier)
+        const provider = contract.runner?.provider;
+        if (!provider) {
+          throw new Error('Provider not available');
+        }
+        const latestBlock = await provider.getBlockNumber();
+
+        // Query TicketPurchased events for this user
+        const purchaseFilter = contract.filters.TicketPurchased(null, null, userAddress);
+        const purchaseEvents = await contract.queryFilter(purchaseFilter, 0, latestBlock);
+
+        // Query TicketRefunded events to filter out refunded tickets
+        const refundFilter = contract.filters.TicketRefunded(null, null, userAddress);
+        const refundEvents = await contract.queryFilter(refundFilter, 0, latestBlock);
+
+        // Create a set of refunded token IDs for quick lookup
+        const refundedTokens = new Set(
+          refundEvents.map((event) => {
+            const args = event.args as any;
+            return `${args.eventId.toString()}-${args.tokenId.toString()}`;
+          })
+        );
+
+        // Process purchase events and filter out refunded tickets
+        const ticketsPromises = purchaseEvents
+          .filter((event) => {
+            const args = event.args as any;
+            const key = `${args.eventId.toString()}-${args.tokenId.toString()}`;
+            return !refundedTokens.has(key);
+          })
+          .map(async (event) => {
+            const args = event.args as any;
+            const eventId = args.eventId;
+            const tierIdx = args.tierIdx;
+            const tokenId = args.tokenId;
+            const price = args.price;
+
+            // Fetch event details
+            const eventData = await fetchEventDetails(contract, eventId);
+
+            // Get tier info
+            const tierName = eventData?.tiers[Number(tierIdx)]?.name || 'Unknown Tier';
+            const nftContract = eventData?.tiers[Number(tierIdx)]?.nftContract || '';
+
+            // Check refund eligibility
+            const refundDeadline = eventData ? eventData.timestamp - BigInt(12 * 60 * 60) : null;
+            const refundEligible = refundDeadline ? BigInt(Math.floor(Date.now() / 1000)) < refundDeadline : false;
+
+            return {
+              eventId,
+              tierIdx,
+              tokenId,
+              price,
+              nftContract,
+              tierName,
+              eventData,
+              refundEligible,
+              refundDeadline,
+            } as UserTicket;
+          });
+
+        const tickets = await Promise.all(ticketsPromises);
+        return tickets;
+      } catch (error) {
+        console.error('Error fetching user tickets:', error);
+        return [];
+      }
+    },
+    enabled: userAddress !== null,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    staleTime: 3000,
   });
 }
 
@@ -271,6 +443,9 @@ export function useInvalidateQueries() {
     },
     invalidateTokenBalance: (address: string) => {
       queryClient.invalidateQueries({ queryKey: ['token-balance', address] });
+    },
+    invalidateUserTickets: (userAddress: string) => {
+      queryClient.invalidateQueries({ queryKey: ['user-tickets', userAddress] });
     },
   };
 }

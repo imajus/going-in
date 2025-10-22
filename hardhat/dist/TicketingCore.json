@@ -1,5 +1,5 @@
 {
-  "address": "0x0a4457bc5f262e9E621A608070526d13aF04F128",
+  "address": "0x1642dD5c38642f91E4aa0025978b572fe30Ed89d",
   "abi": [
     {
       "type": "constructor",
@@ -402,5 +402,5 @@
     }
   ],
   "chainId": 118,
-  "deployedAt": "2025-10-22T12:33:33.783Z"
+  "deployedAt": "2025-10-22T14:18:39.238Z"
 }
