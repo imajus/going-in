@@ -51,16 +51,19 @@ npm run monitor --workspace=hardhat
 **Frontend Development:**
 
 ```bash
-# Start Vite dev server on port 5173
+# Start Vite dev server on port 8080
 npm run dev --workspace=frontend
 
 # Production build
 npm run build --workspace=frontend
 
+# Development build (for testing)
+npm run build:dev --workspace=frontend
+
 # Preview production build
 npm run start --workspace=frontend
 
-# Run ESLint (strict: max-warnings 0)
+# Run ESLint
 npm run lint --workspace=frontend
 ```
 
@@ -91,11 +94,64 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 ### Frontend Architecture
 
+- **Language**: TypeScript with path aliases (`@/` prefix for imports)
+- **UI Framework**: React 18 with functional components
+- **UI Components**: shadcn/ui (Radix UI primitives with TailwindCSS styling)
+- **Icons**: lucide-react icon library
+- **State Management**: @tanstack/react-query for server state
+- **Forms**: react-hook-form with zod validation and @hookform/resolvers
+- **Notifications**: sonner toast library
+- **Theming**: next-themes for dark/light mode support
 - **Web3 Integration**: Reown AppKit (formerly WalletConnect) for wallet connection
 - **Blockchain Library**: ethers.js v6 with BrowserProvider for direct wallet connection
 - **Contract Loading**: Dynamic ABI/address loading via `src/lib/contracts.js` based on chainId
 - **Routing**: React Router v6 for navigation
-- **Styling**: TailwindCSS v4 with PostCSS
+- **Styling**: TailwindCSS v3 with PostCSS and custom theme configuration
+
+**Frontend File Structure:**
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── Navigation.tsx          # Main navigation component
+│   │   └── ui/                     # shadcn/ui components (50+ components)
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── dialog.tsx
+│   │       ├── form.tsx
+│   │       └── ...                 # All shadcn/ui primitives
+│   ├── hooks/
+│   │   ├── use-mobile.tsx          # Mobile detection hook
+│   │   └── use-toast.ts            # Toast notification hook
+│   ├── lib/
+│   │   ├── contracts.js            # Contract ABI/address utilities
+│   │   └── utils.ts                # Utility functions (cn, etc.)
+│   ├── pages/
+│   │   ├── Home.tsx                # Landing page with featured events
+│   │   ├── CreateEvent.tsx         # Event creation form
+│   │   ├── EventDetails.tsx        # Event details and ticket purchase
+│   │   ├── MyTickets.tsx           # User's purchased tickets
+│   │   ├── Dashboard.tsx           # Event organizer dashboard
+│   │   └── NotFound.tsx            # 404 page
+│   ├── App.tsx                     # Main app with routing setup
+│   ├── main.tsx                    # React entry point
+│   ├── index.css                   # Global styles with TailwindCSS
+│   └── vite-env.d.ts               # Vite type definitions
+├── public/
+│   ├── background.mp4              # Hero section video background
+│   ├── favicon.ico
+│   ├── placeholder.svg
+│   └── robots.txt
+├── components.json                 # shadcn/ui configuration
+├── tailwind.config.ts              # TailwindCSS configuration
+├── tsconfig.json                   # TypeScript root config
+├── tsconfig.app.json               # TypeScript app config
+├── tsconfig.node.json              # TypeScript Node config
+├── eslint.config.js                # ESLint flat config
+├── vite.config.ts                  # Vite configuration
+└── package.json
+```
 
 **Data Flow:**
 
@@ -241,9 +297,23 @@ const { contract } = await connection.ignition.deploy(ModuleName);
 - Hardhat: ^3.0.4 with Ignition v3
 - OpenZeppelin Contracts: ^5.4.0
 - Arcology Concurrent Library: @arcologynetwork/concurrentlib@^2.2.0
+
+**Frontend Dependencies:**
+
+- TypeScript: ^5.8.3
+- React: ^18.3.1
+- React Router: ^6.30.1
+- Vite: ^5.4.19 with @vitejs/plugin-react-swc
 - ethers.js: ^6.15.0
-- React: ^18.2.0
-- Vite: ^7.1.3
+- TailwindCSS: ^3.4.17
+- shadcn/ui: Radix UI primitives (various ^1.x and ^2.x versions)
+- @tanstack/react-query: ^5.83.0
+- react-hook-form: ^7.61.1
+- zod: ^3.25.76
+- lucide-react: ^0.462.0
+- sonner: ^1.7.4
+- next-themes: ^0.3.0
+- lodash-es: ^4.17.21
 
 ## Code Conventions
 
@@ -256,15 +326,56 @@ const { contract } = await connection.ignition.deploy(ModuleName);
 - Events: Emit for all state changes with indexed parameters
 - Gas optimization: Struct packing, mappings over arrays, batch operations
 
-### JavaScript/React
+### TypeScript/React
 
 - ES modules only (type: "module" in all package.json files)
+- TypeScript with relaxed compiler options (noImplicitAny: false, strictNullChecks: false)
+- Path aliases: Use `@/` prefix for imports (e.g., `@/components/ui/button`)
 - No React import needed (new JSX transform enabled)
 - Functional components with hooks only
 - PascalCase for components, camelCase for functions/variables
-- JSDoc comments for type hints (no TypeScript)
+- TypeScript interfaces/types for complex data structures
 - Error handling: try/catch with console.error and user-friendly messages
 - Always show loading states during async blockchain operations
+- Use shadcn/ui components for consistent UI (Button, Card, Badge, etc.)
+- Forms: Use react-hook-form with zod schemas for validation
+
+**shadcn/ui Component Usage:**
+
+The frontend uses [shadcn/ui](https://ui.shadcn.com/) - a collection of re-usable components built with Radix UI and TailwindCSS. All UI components are located in `frontend/src/components/ui/`.
+
+Available components include:
+- Layout: Card, Dialog, Sheet, Tabs, Accordion, Collapsible, Separator
+- Forms: Input, Textarea, Select, Checkbox, Switch, Radio Group, Form
+- Buttons: Button, Toggle, Toggle Group
+- Feedback: Alert, Alert Dialog, Toast, Sonner, Progress, Skeleton
+- Navigation: Navigation Menu, Menubar, Breadcrumb, Pagination
+- Data Display: Table, Badge, Avatar, Calendar, Chart
+- Overlays: Popover, Hover Card, Tooltip, Context Menu, Dropdown Menu
+- Media: Aspect Ratio, Carousel
+- Utilities: Scroll Area, Resizable
+
+Import components using the `@/` path alias:
+```typescript
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+```
+
+Component configuration is managed via `frontend/components.json`.
+
+**TypeScript Configuration:**
+
+The project uses a relaxed TypeScript configuration for rapid development:
+- `noImplicitAny: false` - Allows implicit any types
+- `strictNullChecks: false` - Relaxed null checking
+- `noUnusedParameters: false` - Allows unused parameters
+- `noUnusedLocals: false` - Allows unused local variables
+- `allowJs: true` - Allows JavaScript files (e.g., contracts.js)
+
+Three TypeScript config files:
+- `tsconfig.json` - Root config with path aliases and project references
+- `tsconfig.app.json` - Application source code configuration
+- `tsconfig.node.json` - Node.js/Vite configuration scripts
 
 ## Project Documentation
 

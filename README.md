@@ -1,11 +1,13 @@
 ## Overview
 
-This is an Ethereum NFT Marketplace scaffold built with Solidity, IPFS, React & Vite with modern tooling including Hardhat v3 & Ignition deployment system.
+**Going-In** is a blockchain-based parallel ticketing system built for Arcology Network. This project leverages Arcology's parallel execution capabilities to achieve 10,000+ TPS, solving catastrophic failures in traditional ticketing platforms.
+
+The system uses atomic payment and ticket delivery with Arcology's concurrent structures (U256Cumulative), making duplicate sales and "charged but no ticket" scenarios mathematically impossible.
 
 ## Prerequisites for Development
 
 - Node.js v20+ and npm
-- Running Hardhat node (from `../hardhat` directory)
+- Access to Arcology DevNet (remote node at http://arco.vps.webdock.cloud:8545)
 - Deployed smart contracts with ABIs exported
 
 ## Running this project
@@ -16,35 +18,31 @@ To run this project locally, follow these steps:
 
 ```sh
 git clone <repository-url>
-cd ethereum-scaffold
+cd going-in
 nvm use # Optional, but recommended
 npm install
 ```
 
-2. Start the local Hardhat node:
-
-```sh
-npm run chain --workspace=hardhat
-```
-
-3. Deploy contracts (in a separate terminal):
+2. Deploy contracts to Arcology DevNet:
 
 ```sh
 npm run deploy --workspace=hardhat
 ```
 
-4. Configure frontend environment variables (optional):
+3. Configure frontend environment variables (optional):
 
 ```sh
 cp frontend/.env.example frontend/.env
 # Edit frontend/.env with your project IDs
 ```
 
-5. Start the Vite development server:
+4. Start the Vite development server:
 
 ```sh
 npm run dev --workspace=frontend
 ```
+
+The frontend will be available at http://localhost:8080
 
 ## Development Workflow
 
@@ -70,13 +68,15 @@ const contract = new ethers.Contract(address, abi, signer);
 
 #### Hardhat
 
-- `npm run compile --workspace=hardhat` - Compile smart contracts (generates ABIs in `abi/`)
-- `npm run deploy --workspace=hardhat` - Deploy contracts
+- `npm run compile --workspace=hardhat` - Compile smart contracts
+- `npm run deploy --workspace=hardhat` - Deploy contracts to Arcology DevNet
+- `npm run monitor --workspace=hardhat` - Monitor Arcology DevNet status
 
-### Frontend
+#### Frontend
 
+- `npm run dev --workspace=frontend` - Start Vite development server (port 8080)
 - `npm run build --workspace=frontend` - Build Vite application for production
-- `npm run dev --workspace=frontend` - Start Vite development server
+- `npm run build:dev --workspace=frontend` - Build for development/testing
 - `npm run start --workspace=frontend` - Preview production build
 - `npm run lint --workspace=frontend` - Run ESLint
 
@@ -84,32 +84,45 @@ const contract = new ethers.Contract(address, abi, signer);
 
 ```
 hardhat/
-├── contracts/         # Smart contracts
+├── contracts/         # Solidity smart contracts
+├── ignition/          # Hardhat Ignition deployment modules
+│   └── modules/
+├── test/              # Contract tests (JavaScript)
 ├── scripts/           # Deployment scripts
-│   └── deploy.js
 ├── dist/              # Deployment data (auto-generated on deploy)
 ├── abi/               # Contract ABIs (auto-generated on compile)
 ├── hardhat.config.js  # Hardhat configuration
 └── index.js           # Package exports
 
 frontend/
-└──src/                # Frontend source code
-   ├── components/     # React components
-   │   └── Navigation.jsx
-   ├── pages/          # Page components
-   │   ├── Home.jsx
-   │   ├── CreateNFT.jsx
-   │   ├── Dashboard.jsx
-   │   ├── MyNFTs.jsx
-   │   └── ResellNFT.jsx
-   ├── lib/            # Utility libraries
-   │   ├── appkit.js   # Wallet connection
-   │   └── contracts.js # Contract utilities
-   ├── abi/            # Contract ABIs
-   ├── styles/         # CSS styles
-   └── App.jsx         # Main application
-
-   vite.config.js      # Vite configuration
+├── src/
+│   ├── components/
+│   │   ├── Navigation.tsx     # Main navigation
+│   │   └── ui/                # shadcn/ui components (50+)
+│   ├── pages/                 # Page components (TypeScript)
+│   │   ├── Home.tsx           # Landing page
+│   │   ├── CreateEvent.tsx    # Event creation
+│   │   ├── EventDetails.tsx   # Event details
+│   │   ├── MyTickets.tsx      # User tickets
+│   │   ├── Dashboard.tsx      # Organizer dashboard
+│   │   └── NotFound.tsx       # 404 page
+│   ├── hooks/                 # Custom React hooks
+│   │   ├── use-mobile.tsx
+│   │   └── use-toast.ts
+│   ├── lib/                   # Utilities
+│   │   ├── contracts.js       # Contract utilities
+│   │   └── utils.ts           # Helper functions
+│   ├── App.tsx                # Main application
+│   ├── main.tsx               # React entry point
+│   └── index.css              # Global styles
+├── public/
+│   ├── background.mp4         # Hero video
+│   └── favicon.ico
+├── components.json            # shadcn/ui config
+├── tailwind.config.ts         # TailwindCSS config
+├── tsconfig.json              # TypeScript config
+├── eslint.config.js           # ESLint config
+└── vite.config.ts             # Vite configuration
 ```
 
 ### Configuration
@@ -127,21 +140,35 @@ Configure the following variables:
 - `VITE_REOWN_PROJECT_ID` - Get from [Reown Dashboard](https://dashboard.reown.com) for wallet connection
 - `VITE_HARDHAT_RPC_URL`
 
-#### Network Deployment
+#### Network Configuration
 
-To deploy to other networks:
+The project is configured to deploy to Arcology DevNet by default:
+- **Network**: Arcology DevNet
+- **RPC URL**: http://arco.vps.webdock.cloud:8545
+- **Chain ID**: 118
+- Deployment artifacts are stored in `hardhat/ignition/deployments/chain-118/`
 
-1. Update network configurations in `hardhat/hardhat.config.js`
-2. Set up private keys securely (use environment variables or Hardhat accounts)
-3. Configure RPC endpoints (Infura, Alchemy, etc.)
-4. Deploy with: `npm run deploy --workspace=hardhat -- --network <network-name>`
+To deploy to other networks, update network configurations in `hardhat/hardhat.config.js`
 
 ### Technology Stack
 
-- **Frontend**: React 18 + Vite + TailwindCSS
-- **Routing**: React Router v6
+**Frontend:**
+- **Language**: TypeScript 5.8
+- **Framework**: React 18 with React Router v6
+- **Build Tool**: Vite 5.4 with SWC plugin
+- **UI Components**: shadcn/ui (Radix UI primitives)
+- **Styling**: TailwindCSS v3 with custom theme
+- **State Management**: @tanstack/react-query
+- **Forms**: react-hook-form + zod validation
+- **Icons**: lucide-react
+- **Notifications**: sonner (toast library)
+- **Theming**: next-themes for dark/light mode
+
+**Blockchain:**
+- **Network**: Arcology Network (parallel execution blockchain)
+- **Library**: Ethers.js v6
 - **Wallet**: Reown AppKit (formerly WalletConnect)
-- **Blockchain**: Ethers.js v6
-- **Smart Contracts**: Solidity 0.8.20 + OpenZeppelin
-- **Development**: Hardhat v3 + Ignition deployment
-- **Storage**: IPFS for metadata and images
+- **Smart Contracts**: Solidity 0.8.19
+- **Concurrent Library**: @arcologynetwork/concurrentlib v2.2.0
+- **Security**: OpenZeppelin Contracts v5.4.0
+- **Development**: Hardhat v3 + Ignition deployment system

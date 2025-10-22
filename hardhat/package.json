@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.js",
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./types": "./types/ethers-contracts/index.ts"
   },
   "scripts": {
     "chain:start": "docker run -itd --rm --name arcology -p 8545:8545  arcologynetwork/devnet -f http://localhost:7545 -b http://localhost:3500 -s http://localhost:8545 -r true -m false",

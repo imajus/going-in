@@ -296,219 +296,252 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 2.1 Web3 Integration Setup
 
-- [ ] **Task 2.1.1**: Drop Reown AppKit support in favour of Ethers' BrowserProvider
+- [ ] **Task 2.1.1**: Set up Ethers BrowserProvider for wallet connection
 
-  - Update `frontend/src/lib/web3.js` with Arcology network config
-  - Add Arcology DevNet chain ID and RPC (extract from `hardhat/hardhat.config.js`)
+  - Create `frontend/src/lib/web3.ts` with Arcology network config
+  - Implement wallet connection using `window.ethereum` and `ethers.BrowserProvider`
+  - Add Arcology DevNet chain ID (118) and RPC endpoint
+  - Handle wallet connection errors and chain switching
 
-- [ ] **Task 2.1.2**: Create contract loading utilities
+- [ ] **Task 2.1.2**: Update contract loading utilities
 
-  - Update `frontend/src/lib/contracts.js`
-  - Implement dynamic loading of deployed contract addresses
-  - Import ABIs from hardhat workspace exports
-  - Create contract instance helpers for ethers.js
+  - Review existing `frontend/src/lib/contracts.ts`
+  - Verify dynamic loading of deployed contract addresses works
+  - Ensure ABIs are imported correctly from hardhat workspace exports
+  - Test contract instance creation with ethers.js v6
 
-- [ ] **Task 2.1.3**: Create custom React hooks
-  - `useWallet.js` - wallet connection state and actions
-  - `useContract.js` - contract instance management
-  - `useRealtime.js` - block event listeners for live updates
-  - `useEventData.js` - fetch and cache event data
+- [ ] **Task 2.1.3**: Create custom React hooks (TypeScript)
+  - `useWallet.ts` - wallet connection state and actions using BrowserProvider
+  - `useContract.ts` - contract instance management with TypeScript types
+  - `useRealtime.ts` - block event listeners for live updates
+  - `useEventData.ts` - fetch and cache event data (integrate with @tanstack/react-query)
 
 ### 2.2 Event Creation Interface
 
-- [ ] **Task 2.2.1**: Create EventCreator component
+- [ ] **Task 2.2.1**: Update CreateEvent page with form implementation
 
-  - Create `frontend/src/components/EventCreator/EventCreator.jsx`
-  - Form for event name, venue, timestamp
+  - Review existing `frontend/src/pages/CreateEvent.tsx`
+  - Implement form using react-hook-form with zod validation schema
+  - Define TypeScript interfaces for event creation data
+  - Form fields: event name, venue, timestamp (date picker with react-day-picker)
   - Dynamic tier configuration with Add/Remove tier buttons (minimum 1, maximum 5)
-  - Each tier: name (string), capacity (uint256), price (uint256)
+  - Each tier: name (string), capacity (number), price (number)
   - Implement default tier configuration: Standard (100 tokens, 100000 tickets), Premium (250 tokens, 10000 tickets), VIP (500 tokens, 1000 tickets)
   - Display payment token address from TicketingCore contract (read-only, for user reference)
-  - Form validation (timestamp >12 hours future, at least 1 tier, capacities >0, unique tier names)
+  - Form validation: timestamp >12 hours future, at least 1 tier, capacities >0, unique tier names
+  - Use shadcn/ui components: Form, Input, Button, Card, Label, Calendar
 
-- [ ] **Task 2.2.2**: Implement event creation flow
+- [ ] **Task 2.2.2**: Implement event creation transaction flow
 
-  - Connect to TicketingCore contract
+  - Connect to TicketingCore contract using useContract hook
   - Read payment token address from contract for display
   - Call `createEvent()` with form data (name, venue, timestamp, tier configs)
-  - Show transaction pending state
-  - Display success with event ID
-  - Handle errors with user-friendly messages
+  - Show transaction pending state using shadcn/ui Button loading state
+  - Display success notification using sonner toast
+  - Handle errors with user-friendly toast messages
   - Gas estimation before submission
-
-- [ ] **Task 2.2.3**: Create CreateEvent page
-  - Create `frontend/src/pages/CreateEvent.jsx`
-  - Integrate EventCreator component
-  - Add navigation breadcrumbs
-  - Responsive layout
+  - Redirect to event details page on success
 
 ### 2.3 Event Discovery & Browsing
 
-- [ ] **Task 2.3.1**: Create EventBrowser component
+- [ ] **Task 2.3.1**: Update Home page with event listing
 
-  - Create `frontend/src/components/EventBrowser/EventBrowser.jsx`
-  - List view of all events
-  - Display event name, venue, date
-  - Show availability for each tier (sold/capacity)
-  - Real-time updates using block events
+  - Review existing `frontend/src/pages/Home.tsx` (already has featured events structure)
+  - Replace mock FEATURED_EVENTS with real blockchain data
+  - Fetch events from TicketingCore contract using useEventData hook
+  - Implement @tanstack/react-query for data fetching and caching
+  - Display event cards in grid layout (already implemented)
+  - Real-time updates using block event listeners
 
-- [ ] **Task 2.3.2**: Create EventCard component
+- [ ] **Task 2.3.2**: Enhance EventCard display
 
-  - Display event summary
-  - Show tier pricing and availability
-  - Countdown timer to event/refund deadline
-  - Click to navigate to event details
+  - Update existing Card components in Home.tsx to use real data
+  - Show tier pricing and availability (fetch from contract)
+  - Add countdown timer to event/refund deadline using date-fns
+  - Implement click navigation to event details using React Router
+  - Show sold out badges dynamically based on actual tier availability
+  - Use lucide-react icons (Calendar, MapPin, Ticket already in use)
 
-- [ ] **Task 2.3.3**: Create Home page
-  - Create `frontend/src/pages/Home.jsx`
-  - Integrate EventBrowser
-  - Featured events section
-  - Search/filter functionality
+- [ ] **Task 2.3.3**: Add search and filter functionality
+  - Create search input using shadcn/ui Input component
+  - Filter by event status (upcoming, past, sold out)
+  - Filter by date range using shadcn/ui Calendar
+  - Sort by date, price, popularity
+  - Debounce search input for performance
 
 ### 2.4 Ticket Purchase Flow
 
-- [ ] **Task 2.4.1**: Create EventDetails page
+- [ ] **Task 2.4.1**: Update EventDetails page
 
-  - Create `frontend/src/pages/EventDetails.jsx`
-  - Display full event information
-  - Show detailed tier breakdown
-  - Real-time availability updates (every block)
+  - Review existing `frontend/src/pages/EventDetails.tsx`
+  - Fetch event data using useParams to get event ID from URL
+  - Display full event information using shadcn/ui Card components
+  - Show detailed tier breakdown with TypeScript interfaces
+  - Real-time availability updates using useRealtime hook
+  - Implement loading states with shadcn/ui Skeleton
 
-- [ ] **Task 2.4.2**: Create PurchaseFlow component
+- [ ] **Task 2.4.2**: Implement purchase flow in EventDetails
 
-  - Create `frontend/src/components/PurchaseFlow/PurchaseFlow.jsx`
-  - Tier selection interface
-  - Display price and availability
-  - Token approval step (if needed)
-  - Mint ERC-20 token for testing purposes (1mil)
-  - Purchase confirmation
+  - Add tier selection interface using shadcn/ui Tabs or Radio Group
+  - Display price and availability for each tier
+  - Show token approval status (check current allowance)
+  - Add "Mint Test Tokens" button (1 million tokens for testing)
+  - Purchase confirmation using shadcn/ui Alert Dialog
+  - Use shadcn/ui Button with loading states
 
 - [ ] **Task 2.4.3**: Implement two-step purchase transaction
 
-  - Step 1: Call `ERC20.approve(TicketingCore, price)` if needed
+  - Step 1: Check allowance, call `ERC20.approve(TicketingCore, price)` if needed
+  - Show approval pending state with Progress indicator
   - Wait for approval confirmation
   - Step 2: Call `TicketingCore.purchaseTicket(eventId, tierIdx)`
-  - Show loading states for both steps
-  - Display NFT ticket on success
+  - Show loading states for both steps using Button loading state
+  - Display NFT ticket details on success using sonner toast
   - Retry logic: 3 attempts with exponential backoff (1s, 2s, 4s)
+  - Handle errors with user-friendly messages
 
-- [ ] **Task 2.4.4**: Create TierSelector component
+- [ ] **Task 2.4.4**: Create TierSelector component (TypeScript)
+  - Create `frontend/src/components/TierSelector.tsx`
   - Dynamic visual representation of event tiers (renders 1-5 tiers)
-  - Display tier names prominently
-  - Show capacity bars (sold/total)
-  - Highlight selected tier
-  - Disable sold-out tiers
-  - Price display per tier
+  - Display tier names prominently using shadcn/ui Badge
+  - Show capacity bars (sold/total) using shadcn/ui Progress
+  - Highlight selected tier with accent color
+  - Disable sold-out tiers visually
+  - Price display per tier with proper formatting
 
 ### 2.5 Refund Management
 
-- [ ] **Task 2.5.1**: Create MyTickets page
+- [ ] **Task 2.5.1**: Update MyTickets page
 
-  - Create `frontend/src/pages/MyTickets.jsx`
-  - List all NFTs owned by connected wallet
-  - Display event details for each ticket
-  - Show refund eligibility status
-  - Group by upcoming/past events
+  - Review existing `frontend/src/pages/MyTickets.tsx`
+  - Fetch all NFTs owned by connected wallet (query each tier NFT contract)
+  - Display event details for each ticket using shadcn/ui Card
+  - Show refund eligibility status with shadcn/ui Badge
+  - Group by upcoming/past events using shadcn/ui Accordion or Tabs
+  - Implement TypeScript interfaces for ticket data
+  - Use @tanstack/react-query for data fetching
 
-- [ ] **Task 2.5.2**: Create RefundManager component
+- [ ] **Task 2.5.2**: Add refund functionality to MyTickets
 
-  - Create `frontend/src/components/RefundManager/RefundManager.jsx`
-  - Display refund deadline countdown
-  - Refund button (enabled only before deadline)
-  - Show refund amount
-  - Confirmation dialog
+  - Display refund deadline countdown using date-fns
+  - Add refund button (enabled only before deadline) with shadcn/ui Button
+  - Show refund amount prominently
+  - Implement confirmation dialog using shadcn/ui Alert Dialog
+  - Show transaction status with loading states
+  - Display empty state when no tickets owned
 
 - [ ] **Task 2.5.3**: Implement refund transaction flow
-  - Call `TicketingCore.refundTicket(eventId, tokenId)`
-  - Show transaction pending state
-  - Display success with refunded amount
-  - Update UI to remove refunded ticket
-  - Handle errors (after deadline, not owner, etc.)
+  - Call `TicketingCore.refundTicket(eventId, tierIdx, tokenId)`
+  - Show transaction pending state with Button loading state
+  - Display success notification with refunded amount using sonner toast
+  - Update UI to remove refunded ticket (optimistic update)
+  - Handle errors (after deadline, not owner, etc.) with user-friendly messages
+  - Invalidate @tanstack/react-query cache after successful refund
 
 ### 2.6 Organizer Dashboard
 
-- [ ] **Task 2.6.1**: Create OrganizerDashboard page
+- [ ] **Task 2.6.1**: Update Dashboard page
 
-  - Create `frontend/src/pages/OrganizerDashboard.jsx`
-  - Filter events by organizer (connected wallet)
-  - Display event performance metrics
-  - Revenue analytics
+  - Review existing `frontend/src/pages/Dashboard.tsx`
+  - Filter events by organizer (connected wallet address)
+  - Display event performance metrics using shadcn/ui Card
+  - Implement TypeScript interfaces for dashboard data
+  - Use @tanstack/react-query for data fetching
+  - Show loading states with shadcn/ui Skeleton
 
-- [ ] **Task 2.6.2**: Create EventAnalytics component
+- [ ] **Task 2.6.2**: Create EventAnalytics component (TypeScript)
 
-  - Create `frontend/src/components/Dashboard/EventAnalytics.jsx`
-  - Total tickets sold per tier
-  - Revenue accumulated
-  - Available withdrawal amount
-  - Refund deadline status
-  - Visual charts (bar/pie charts for tier distribution)
+  - Create `frontend/src/components/EventAnalytics.tsx`
+  - Total tickets sold per tier with shadcn/ui Progress bars
+  - Revenue accumulated display
+  - Available withdrawal amount (highlighted)
+  - Refund deadline status with countdown using date-fns
+  - Visual charts using recharts (bar/pie charts for tier distribution)
+  - Use shadcn/ui Chart components for data visualization
 
-- [ ] **Task 2.6.3**: Create RevenueWithdrawal component
+- [ ] **Task 2.6.3**: Create RevenueWithdrawal component (TypeScript)
 
-  - Create `frontend/src/components/Dashboard/RevenueWithdrawal.jsx`
-  - Display available revenue
-  - Input for withdrawal amount
-  - Withdraw button (enabled after refund deadline)
-  - Transaction flow with pending state
-  - History of withdrawals
+  - Create `frontend/src/components/RevenueWithdrawal.tsx`
+  - Display available revenue prominently
+  - Input for withdrawal amount using shadcn/ui Input with number validation
+  - Withdraw button (enabled after refund deadline) with shadcn/ui Button
+  - Transaction flow with loading states
+  - Display withdrawal history using shadcn/ui Table
+  - Use react-hook-form for withdrawal amount validation
 
 - [ ] **Task 2.6.4**: Implement withdrawal transaction flow
   - Call `TicketingCore.withdrawRevenue(eventId, amount)`
-  - Validate amount <= available revenue
-  - Show transaction pending state
-  - Display success with withdrawn amount
-  - Handle errors (before deadline, insufficient balance)
+  - Client-side validation: amount <= available revenue
+  - Show transaction pending state with Button loading state
+  - Display success notification with withdrawn amount using sonner toast
+  - Handle errors (before deadline, insufficient balance) with user-friendly messages
+  - Invalidate @tanstack/react-query cache after successful withdrawal
 
 ### 2.7 Navigation & Layout
 
-- [ ] **Task 2.7.1**: Create Navigation component
+- [ ] **Task 2.7.1**: Update Navigation component
 
-  - Create `frontend/src/components/Navigation.jsx`
+  - Review existing `frontend/src/components/Navigation.tsx`
+  - Add wallet connection button using useWallet hook
+  - Display connected address (truncated with ellipsis)
+  - Add disconnect functionality
+  - Implement responsive mobile menu using shadcn/ui Sheet
   - Links to: Home, Create Event, My Tickets, Dashboard
-  - Wallet connection button in header
-  - Display connected address (truncated)
-  - Responsive mobile menu
+  - Highlight active route using React Router useLocation
+  - Use lucide-react icons for navigation items
 
-- [ ] **Task 2.7.2**: Set up React Router
+- [ ] **Task 2.7.2**: Review React Router setup
 
-  - Configure routes in `frontend/src/App.jsx`
-  - Routes: `/`, `/create`, `/events/:id`, `/tickets`, `/dashboard`
-  - Protected routes (require wallet connection)
-  - 404 page
+  - Review existing routes in `frontend/src/App.tsx`
+  - Routes already configured: `/`, `/create`, `/events/:id`, `/tickets`, `/dashboard`
+  - NotFound page already exists at `frontend/src/pages/NotFound.tsx`
+  - Implement protected routes (require wallet connection) using React Router loaders
+  - Redirect to home if wallet not connected for protected routes
+  - Add route transitions if desired
 
-- [ ] **Task 2.7.3**: Create shared UI components
-  - Button component with loading states
-  - Input component with validation
-  - Card component for content containers
-  - Modal component for confirmations
-  - Toast notifications for success/error messages
+- [ ] **Task 2.7.3**: Verify shadcn/ui components setup
+  - All shadcn/ui components already available in `frontend/src/components/ui/`
+  - Button component with loading states ✓
+  - Input component with validation ✓
+  - Card component for content containers ✓
+  - Alert Dialog for confirmations ✓
+  - Toast notifications (sonner) for success/error messages ✓
+  - Review and test components as needed
 
 ### 2.8 Real-time Updates & Optimization
 
 - [ ] **Task 2.8.1**: Implement block event listeners
 
-  - Listen to TicketPurchased events
+  - Create useRealtime hook with TypeScript
+  - Listen to TicketPurchased events using ethers.js contract.on()
   - Listen to TicketRefunded events
   - Listen to EventCreated events
-  - Update UI state on event detection
+  - Update @tanstack/react-query cache on event detection
+  - Clean up listeners on component unmount
 
 - [ ] **Task 2.8.2**: Implement optimistic UI updates
 
+  - Use @tanstack/react-query optimistic updates
   - Immediately update UI on user action
   - Rollback on transaction failure
   - Show pending state during confirmation
+  - Update cache with transaction result
 
 - [ ] **Task 2.8.3**: Add polling fallback
 
-  - Poll event data every 3 seconds if WebSocket unavailable
-  - Exponential backoff on errors
+  - Configure @tanstack/react-query with refetchInterval
+  - Poll event data every 3-5 seconds as fallback
+  - Disable polling when WebSocket events working
+  - Exponential backoff on errors using @tanstack/react-query retry config
   - Automatic reconnection logic
 
-- [ ] **Task 2.8.4**: Optimize performance
-  - Lazy load components with React.lazy
-  - Memoize expensive computations with useMemo
-  - Debounce search/filter inputs
-  - Virtual scrolling for long lists
+- [ ] **Task 2.8.4**: Optimize performance (TypeScript)
+  - Lazy load page components with React.lazy and Suspense
+  - Memoize expensive computations with useMemo and useCallback
+  - Debounce search/filter inputs using lodash-es debounce function
+  - Use @tanstack/react-query for automatic caching and deduplication
+  - Virtual scrolling for long lists if needed (consider react-virtualized)
+  - Code splitting with Vite dynamic imports
 
 ---
 
