@@ -24,14 +24,12 @@ contract TicketingCore is ReentrancyGuard {
      * @param capacity Maximum number of tickets available in this tier
      * @param price Price per ticket in payment tokens
      * @param nftContract Address of the dedicated ConcurrentERC721 contract for this tier
-     * @param sold U256Cumulative counter for tickets sold (0 to capacity bounds)
      */
     struct Tier {
         string name;
         uint256 capacity;
         uint256 price;
         address nftContract;
-        U256Cumulative sold;
     }
 
     /**
@@ -42,7 +40,6 @@ contract TicketingCore is ReentrancyGuard {
      * @param timestamp Event timestamp (Unix time)
      * @param organizer Address of the event organizer
      * @param tiers Dynamic array of tiers (minimum 1, recommended max 5)
-     * @param revenue U256Cumulative counter for total revenue collected
      */
     struct Event {
         uint256 id;
@@ -51,11 +48,17 @@ contract TicketingCore is ReentrancyGuard {
         uint256 timestamp;
         address organizer;
         Tier[] tiers;
-        U256Cumulative revenue;
     }
 
     // Mapping from event ID to Event
     mapping(uint256 => Event) private _events;
+
+    // Concurrent state tracking - separated from view-friendly structs
+    // Mapping from eventId to revenue
+    mapping(uint256 => U256Cumulative) private _eventRevenue;
+
+    // Mapping from eventId to tierIdx to sold count
+    mapping(uint256 => mapping(uint256 => U256Cumulative)) private _tierSold;
 
     // Events
     event EventCreated(
@@ -154,7 +157,9 @@ contract TicketingCore is ReentrancyGuard {
         newEvent.venue = venue;
         newEvent.timestamp = timestamp;
         newEvent.organizer = msg.sender;
-        newEvent.revenue = new U256Cumulative(0, type(uint256).max);
+
+        // Initialize concurrent state tracking
+        _eventRevenue[eventId] = new U256Cumulative(0, type(uint256).max);
 
         // Create tiers and deploy NFT contracts
         for (uint256 i = 0; i < tierConfigs.length; i++) {
@@ -190,11 +195,13 @@ contract TicketingCore is ReentrancyGuard {
                 name: config.name,
                 capacity: config.capacity,
                 price: config.price,
-                nftContract: address(tierNFT),
-                sold: new U256Cumulative(0, config.capacity)
+                nftContract: address(tierNFT)
             });
 
             newEvent.tiers.push(newTier);
+
+            // Initialize concurrent sold counter for this tier
+            _tierSold[eventId][i] = new U256Cumulative(0, config.capacity);
         }
 
         emit EventCreated(
@@ -238,10 +245,10 @@ contract TicketingCore is ReentrancyGuard {
         paymentToken.transferFrom(msg.sender, address(this), tier.price);
 
         // Increment sold count - will revert if capacity exceeded (cumulative upper bound)
-        tier.sold.add(1);
+        _tierSold[eventId][tierIdx].add(1);
 
         // Increment revenue
-        eventData.revenue.add(tier.price);
+        _eventRevenue[eventId].add(tier.price);
 
         // Mint NFT ticket from tier-specific collection
         ConcurrentERC721 tierNFT = ConcurrentERC721(tier.nftContract);
@@ -296,10 +303,10 @@ contract TicketingCore is ReentrancyGuard {
         tierNFT.burn(tokenId);
 
         // Decrement sold count
-        tier.sold.sub(1);
+        _tierSold[eventId][tierIdx].sub(1);
 
         // Decrement revenue
-        eventData.revenue.sub(tier.price);
+        _eventRevenue[eventId].sub(tier.price);
 
         // Transfer refund to buyer
         paymentToken.transfer(msg.sender, tier.price);
@@ -337,7 +344,7 @@ contract TicketingCore is ReentrancyGuard {
         );
 
         // Deduct from revenue - will revert if amount exceeds available revenue (cumulative lower bound)
-        eventData.revenue.sub(amount);
+        _eventRevenue[eventId].sub(amount);
 
         // Transfer tokens to organizer
         paymentToken.transfer(msg.sender, amount);
@@ -383,7 +390,7 @@ contract TicketingCore is ReentrancyGuard {
             _events[eventId].id != 0,
             "TicketingCore: event does not exist"
         );
-        return _events[eventId].revenue.get();
+        return _eventRevenue[eventId].get();
     }
 
     /**
@@ -407,7 +414,7 @@ contract TicketingCore is ReentrancyGuard {
         );
 
         Tier storage tier = _events[eventId].tiers[tierIdx];
-        return (tier.sold.get(), tier.capacity);
+        return (_tierSold[eventId][tierIdx].get(), tier.capacity);
     }
 
     /**

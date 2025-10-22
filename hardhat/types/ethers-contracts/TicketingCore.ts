@@ -11,14 +11,14 @@ export declare namespace TicketingCore {
     export type TierConfigStructOutput = [name: string, capacity: bigint, price: bigint] & {name: string, capacity: bigint, price: bigint }
   
 
-    export type TierStruct = {name: string, capacity: BigNumberish, price: BigNumberish, nftContract: AddressLike, sold: AddressLike}
+    export type TierStruct = {name: string, capacity: BigNumberish, price: BigNumberish, nftContract: AddressLike}
 
-    export type TierStructOutput = [name: string, capacity: bigint, price: bigint, nftContract: string, sold: string] & {name: string, capacity: bigint, price: bigint, nftContract: string, sold: string }
+    export type TierStructOutput = [name: string, capacity: bigint, price: bigint, nftContract: string] & {name: string, capacity: bigint, price: bigint, nftContract: string }
   
 
-    export type EventStruct = {id: BigNumberish, name: string, venue: string, timestamp: BigNumberish, organizer: AddressLike, tiers: TicketingCore.TierStruct[], revenue: AddressLike}
+    export type EventStruct = {id: BigNumberish, name: string, venue: string, timestamp: BigNumberish, organizer: AddressLike, tiers: TicketingCore.TierStruct[]}
 
-    export type EventStructOutput = [id: bigint, name: string, venue: string, timestamp: bigint, organizer: string, tiers: TicketingCore.TierStructOutput[], revenue: string] & {id: bigint, name: string, venue: string, timestamp: bigint, organizer: string, tiers: TicketingCore.TierStructOutput[], revenue: string }
+    export type EventStructOutput = [id: bigint, name: string, venue: string, timestamp: bigint, organizer: string, tiers: TicketingCore.TierStructOutput[]] & {id: bigint, name: string, venue: string, timestamp: bigint, organizer: string, tiers: TicketingCore.TierStructOutput[] }
   
     }
 

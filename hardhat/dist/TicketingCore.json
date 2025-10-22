@@ -1,5 +1,5 @@
 {
-  "address": "0xEdd208909075711A1cff4AF055E59F377e873a37",
+  "address": "0x0a4457bc5f262e9E621A608070526d13aF04F128",
   "abi": [
     {
       "type": "constructor",
@@ -273,16 +273,8 @@
                 {
                   "type": "address",
                   "name": "nftContract"
-                },
-                {
-                  "type": "address",
-                  "name": "sold"
                 }
               ]
-            },
-            {
-              "type": "address",
-              "name": "revenue"
             }
           ]
         }
@@ -410,5 +402,5 @@
     }
   ],
   "chainId": 118,
-  "deployedAt": "2025-10-22T11:02:03.378Z"
+  "deployedAt": "2025-10-22T12:33:33.783Z"
 }
