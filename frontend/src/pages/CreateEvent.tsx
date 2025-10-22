@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, Calendar } from "lucide-react";
+import { Plus, X, Calendar, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useWallet } from "@/hooks/useWallet";
+import { useTicketingCore } from "@/hooks/useContract";
+import { useInvalidateQueries } from "@/hooks/useEventData";
+import { ethers } from "ethers";
+import { toast } from "sonner";
 
 interface Tier {
   name: string;
@@ -14,9 +19,18 @@ interface Tier {
 }
 
 export default function CreateEvent() {
+  const navigate = useNavigate();
+  const { isConnected } = useWallet();
+  const contract = useTicketingCore(true);
+  const { invalidateAllEvents } = useInvalidateQueries();
+
+  const [eventName, setEventName] = useState("");
+  const [venue, setVenue] = useState("");
+  const [eventDate, setEventDate] = useState("");
   const [tiers, setTiers] = useState<Tier[]>([
     { name: "General Admission", capacity: "1000", price: "50" },
   ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const addTier = () => {
     if (tiers.length < 5) {
@@ -36,6 +50,102 @@ export default function CreateEvent() {
     setTiers(updated);
   };
 
+  const validateForm = (): string | null => {
+    if (!eventName.trim()) return "Event name is required";
+    if (!venue.trim()) return "Venue is required";
+    if (!eventDate) return "Event date is required";
+
+    // Check if date is at least 12 hours in the future
+    const eventTimestamp = new Date(eventDate).getTime();
+    const now = Date.now();
+    const twelveHoursInMs = 12 * 60 * 60 * 1000;
+
+    if (eventTimestamp < now + twelveHoursInMs) {
+      return "Event must be at least 12 hours in the future";
+    }
+
+    // Validate tiers
+    if (tiers.length === 0) return "At least one tier is required";
+
+    const tierNames = new Set<string>();
+    for (const tier of tiers) {
+      if (!tier.name.trim()) return "All tier names are required";
+      if (tierNames.has(tier.name)) return "Tier names must be unique";
+      tierNames.add(tier.name);
+
+      const capacity = parseInt(tier.capacity);
+      if (isNaN(capacity) || capacity <= 0) return "Tier capacity must be greater than 0";
+
+      const price = parseFloat(tier.price);
+      if (isNaN(price) || price <= 0) return "Tier price must be greater than 0";
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    // Validate form
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Convert date to Unix timestamp (seconds)
+      const eventTimestamp = Math.floor(new Date(eventDate).getTime() / 1000);
+
+      // Prepare tier configs for smart contract
+      const tierConfigs = tiers.map((tier) => ({
+        name: tier.name,
+        capacity: BigInt(tier.capacity),
+        price: ethers.parseUnits(tier.price, 18), // Parse price as 18 decimals (payment token)
+      }));
+
+      toast.info("Creating event on blockchain...");
+
+      // Call createEvent on smart contract
+      const tx = await contract.createEvent(
+        eventName,
+        venue,
+        BigInt(eventTimestamp),
+        tierConfigs
+      );
+
+      toast.info("Transaction submitted, waiting for confirmation...");
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+
+      // Invalidate events cache to refetch
+      invalidateAllEvents();
+
+      toast.success("Event created successfully!");
+
+      // Navigate to home page
+      navigate("/");
+    } catch (error: any) {
+      console.error("Error creating event:", error);
+
+      if (error.code === "ACTION_REJECTED") {
+        toast.error("Transaction was rejected");
+      } else {
+        toast.error(error.message || "Failed to create event");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -52,17 +162,20 @@ export default function CreateEvent() {
           </div>
 
           <Card className="p-8 border-border/50 bg-card/50 backdrop-blur">
-            <form className="space-y-8">
+            <form className="space-y-8" onSubmit={handleSubmit}>
               {/* Basic Info */}
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Event Details</h2>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="name">Event Name</Label>
                   <Input
                     id="name"
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
                     placeholder="Neon Dreams Festival"
                     className="bg-background/50"
+                    required
                   />
                 </div>
 
@@ -71,17 +184,23 @@ export default function CreateEvent() {
                     <Label htmlFor="venue">Venue</Label>
                     <Input
                       id="venue"
+                      value={venue}
+                      onChange={(e) => setVenue(e.target.value)}
                       placeholder="Arcology Arena"
                       className="bg-background/50"
+                      required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="date">Event Date</Label>
                     <Input
                       id="date"
                       type="datetime-local"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
                       className="bg-background/50"
+                      required
                     />
                   </div>
                 </div>
@@ -168,11 +287,30 @@ export default function CreateEvent() {
 
               {/* Submit */}
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1 shadow-glow">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Create Event
+                <Button
+                  type="submit"
+                  className="flex-1 shadow-glow"
+                  disabled={isSubmitting || !isConnected}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="mr-2 h-5 w-5" />
+                      Create Event
+                    </>
+                  )}
                 </Button>
-                <Button type="button" variant="outline" className="border-primary/50">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-primary/50"
+                  onClick={() => navigate("/")}
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </Button>
               </div>

@@ -75,8 +75,8 @@ The system is designed around three core Solidity contracts using Arcology's con
 
 1. **TicketingCore.sol** - Main event management contract
 
-   - Fixed 3-tier ticket structure per event (Premium/Standard/General)
-   - Parallel-safe ticket sales using U256Cumulative for sold count tracking
+   - Dynamic tier structure per event (1-5 tiers recommended)
+   - Parallel-safe ticket sales using U256Cumulative counters in dedicated mappings
    - Time-locked revenue withdrawals (after refund deadline: event time - 12 hours)
    - Atomic refund mechanism with NFT burning
 
@@ -104,7 +104,7 @@ The system is designed around three core Solidity contracts using Arcology's con
 - **Theming**: next-themes for dark/light mode support
 - **Web3 Integration**: Reown AppKit (formerly WalletConnect) for wallet connection
 - **Blockchain Library**: ethers.js v6 with BrowserProvider for direct wallet connection
-- **Contract Loading**: Dynamic ABI/address loading via `src/lib/contracts.js` based on chainId
+- **Contract Loading**: Dynamic ABI/address loading via `src/lib/contracts.ts` based on chainId
 - **Routing**: React Router v6 for navigation
 - **Styling**: TailwindCSS v3 with PostCSS and custom theme configuration
 
@@ -125,7 +125,7 @@ frontend/
 │   │   ├── use-mobile.tsx          # Mobile detection hook
 │   │   └── use-toast.ts            # Toast notification hook
 │   ├── lib/
-│   │   ├── contracts.js            # Contract ABI/address utilities
+│   │   ├── contracts.ts            # Contract ABI/address utilities
 │   │   └── utils.ts                # Utility functions (cn, etc.)
 │   ├── pages/
 │   │   ├── Home.tsx                # Landing page with featured events
@@ -194,10 +194,12 @@ const owner = await nft.ownerOf.staticCall(tokenId);
 ```
 
 **Common Non-View Functions in ConcurrentERC721:**
+
 - `ownerOf(uint256 tokenId)` → use `.staticCall` to get address
 - `getApproved(uint256 tokenId)` → use `.staticCall` to get address
 
 **View Functions (normal usage):**
+
 - `balanceOf(address owner)`
 - `totalSupply()`
 - `isApprovedForAll(address owner, address operator)`
@@ -206,7 +208,7 @@ const owner = await nft.ownerOf.staticCall(tokenId);
 **U256Cumulative Usage:**
 
 - Thread-safe counter with bounds enforcement (0 to capacity)
-- Used for: tier sold counts, token balances, total supply tracking
+- Used for: tier sold counts, event revenue, token balances, total supply tracking
 - Enables conflict-free parallel execution of purchases
 
 **Commutativity Requirements:**
@@ -214,12 +216,6 @@ const owner = await nft.ownerOf.staticCall(tokenId);
 - Avoid mixing reads (`fullLength()`) with concurrent writes (`.push()`)
 - Use `committedLength()` for safe reads during parallel execution
 - Separate read and write operations to prevent conflicts
-
-**Fixed 3-Tier Structure:**
-
-- Avoids dynamic array overhead for gas optimization
-- Each tier has: capacity (uint256), price (uint256), sold (U256Cumulative)
-- Allows flexible naming but fixed structure for parallel safety
 
 ## Critical Development Constraints
 
@@ -345,6 +341,7 @@ const { contract } = await connection.ignition.deploy(ModuleName);
 The frontend uses [shadcn/ui](https://ui.shadcn.com/) - a collection of re-usable components built with Radix UI and TailwindCSS. All UI components are located in `frontend/src/components/ui/`.
 
 Available components include:
+
 - Layout: Card, Dialog, Sheet, Tabs, Accordion, Collapsible, Separator
 - Forms: Input, Textarea, Select, Checkbox, Switch, Radio Group, Form
 - Buttons: Button, Toggle, Toggle Group
@@ -356,9 +353,10 @@ Available components include:
 - Utilities: Scroll Area, Resizable
 
 Import components using the `@/` path alias:
+
 ```typescript
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 ```
 
 Component configuration is managed via `frontend/components.json`.
@@ -366,13 +364,15 @@ Component configuration is managed via `frontend/components.json`.
 **TypeScript Configuration:**
 
 The project uses a relaxed TypeScript configuration for rapid development:
+
 - `noImplicitAny: false` - Allows implicit any types
 - `strictNullChecks: false` - Relaxed null checking
 - `noUnusedParameters: false` - Allows unused parameters
 - `noUnusedLocals: false` - Allows unused local variables
-- `allowJs: true` - Allows JavaScript files (e.g., contracts.js)
+- `allowJs: true` - Allows JavaScript files
 
 Three TypeScript config files:
+
 - `tsconfig.json` - Root config with path aliases and project references
 - `tsconfig.app.json` - Application source code configuration
 - `tsconfig.node.json` - Node.js/Vite configuration scripts
@@ -391,7 +391,7 @@ Three TypeScript config files:
 
 1. **Arcology Concurrency Violations**: Reading array length during concurrent pushes causes conflicts
 2. **Non-Atomic Operations**: Payment and NFT mint must be in same transaction
-3. **Fixed Tier Assumption**: All events must have exactly 3 tiers (can have 0 capacity for unused tiers)
+3. **U256Cumulative in Structs**: Never include U256Cumulative fields in structs that need to be returned to frontend - use separate mappings instead
 4. **Refund Deadline**: Frontend must enforce 12-hour cutoff before event timestamp
 5. **Contract Deployment Synchronization**: After contract changes, re-run deployment scripts to update dist/{ContractName}.json files for frontend consumption
 
