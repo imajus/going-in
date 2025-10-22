@@ -1,4 +1,5 @@
 {
   "ConcurrentERC721Module#ConcurrentERC721": "0x1642dD5c38642f91E4aa0025978b572fe30Ed89d",
-  "ConcurrentERC20Module#ConcurrentERC20": "0xfbC451FBd7E17a1e7B18347337657c1F2c52B631"
+  "ConcurrentERC20Module#ConcurrentERC20": "0xfbC451FBd7E17a1e7B18347337657c1F2c52B631",
+  "TicketingCoreModule#TicketingCore": "0x11Ce7BB418B1335B9b4f858C446912BfC905EFAb"
 }

@@ -3,5 +3,4 @@
 /* eslint-disable */
 export * as concurrentErc721Sol from './ConcurrentERC721.sol/index.js';
 export { ConcurrentERC20__factory } from './ConcurrentERC20__factory.js';
-export { ParallelLike__factory } from './ParallelLike__factory.js';
 export { TicketingCore__factory } from './TicketingCore__factory.js';

@@ -1,0 +1,414 @@
+{
+  "address": "0x11Ce7BB418B1335B9b4f858C446912BfC905EFAb",
+  "abi": [
+    {
+      "type": "constructor",
+      "stateMutability": "undefined",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_paymentToken"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "EventCreated",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "name",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "venue",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "organizer",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "tierCount",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "RevenueWithdrawn",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "organizer",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "amount",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "TicketPurchased",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "tierIdx",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "buyer",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "tokenId",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "price",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "TicketRefunded",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "tierIdx",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "buyer",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "tokenId",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "refundAmount",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "canRefund",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "createEvent",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "name"
+        },
+        {
+          "type": "string",
+          "name": "venue"
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp"
+        },
+        {
+          "type": "tuple[]",
+          "name": "tierConfigs",
+          "components": [
+            {
+              "type": "string",
+              "name": "name"
+            },
+            {
+              "type": "uint256",
+              "name": "capacity"
+            },
+            {
+              "type": "uint256",
+              "name": "price"
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getAvailableRevenue",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getEventDetails",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple",
+          "name": "",
+          "components": [
+            {
+              "type": "uint256",
+              "name": "id"
+            },
+            {
+              "type": "string",
+              "name": "name"
+            },
+            {
+              "type": "string",
+              "name": "venue"
+            },
+            {
+              "type": "uint256",
+              "name": "timestamp"
+            },
+            {
+              "type": "address",
+              "name": "organizer"
+            },
+            {
+              "type": "tuple[]",
+              "name": "tiers",
+              "components": [
+                {
+                  "type": "string",
+                  "name": "name"
+                },
+                {
+                  "type": "uint256",
+                  "name": "capacity"
+                },
+                {
+                  "type": "uint256",
+                  "name": "price"
+                },
+                {
+                  "type": "address",
+                  "name": "nftContract"
+                },
+                {
+                  "type": "address",
+                  "name": "sold"
+                }
+              ]
+            },
+            {
+              "type": "address",
+              "name": "revenue"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getRefundDeadline",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getTierAvailability",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        },
+        {
+          "type": "uint256",
+          "name": "tierIdx"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "sold"
+        },
+        {
+          "type": "uint256",
+          "name": "capacity"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "paymentToken",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "purchaseTicket",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        },
+        {
+          "type": "uint256",
+          "name": "tierIdx"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "tokenId"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "refundTicket",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        },
+        {
+          "type": "uint256",
+          "name": "tierIdx"
+        },
+        {
+          "type": "uint256",
+          "name": "tokenId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "withdrawRevenue",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "eventId"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "chainId": 118,
+  "deployedAt": "2025-10-22T08:42:42.445Z"
+}
