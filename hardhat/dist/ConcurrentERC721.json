@@ -303,7 +303,7 @@
       "type": "function",
       "name": "supportsInterface",
       "constant": true,
-      "stateMutability": "pure",
+      "stateMutability": "view",
       "payable": false,
       "inputs": [
         {
@@ -325,6 +325,25 @@
       "stateMutability": "view",
       "payable": false,
       "inputs": [],
+      "outputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "tokenURI",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "tokenId"
+        }
+      ],
       "outputs": [
         {
           "type": "string",
@@ -369,6 +388,6 @@
     }
   ],
   "chainId": 118,
-  "deployedAt": "2025-10-23T07:15:52.894Z",
+  "deployedAt": "2025-10-23T10:07:38.403Z",
   "note": "NFT contracts are deployed dynamically by TicketingCore for each event tier"
 }

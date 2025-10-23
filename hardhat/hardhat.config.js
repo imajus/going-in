@@ -37,10 +37,15 @@ export default {
   plugins: [hardhatToolboxMochaEthers],
   defaultNetwork: 'arcology',
   networks: {
-    arcology: {
+    devnet: {
       type: 'http',
-      // url: 'http://arco.vps.webdock.cloud:8545',
       url: 'http://localhost:8545',
+      accounts,
+      chainId: 118,
+    },
+    testnet: {
+      type: 'http',
+      url: 'http://arco.vps.webdock.cloud:8545',
       accounts,
       chainId: 118,
     },

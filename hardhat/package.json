@@ -9,13 +9,15 @@
     "./types": "./types/ethers-contracts/index.ts"
   },
   "scripts": {
-    "chain:start": "docker run -itd --rm --name arcology -p 8545:8545  arcologynetwork/devnet -f http://localhost:7545 -b http://localhost:3500 -s http://localhost:8545 -r true -m false",
-    "chain:stop": "docker stop arcology",
+    "devnet:start": "docker run -itd --rm --name arcology -p 8545:8545  arcologynetwork/devnet -f http://localhost:7545 -b http://localhost:3500 -s http://localhost:8545 -r true -m false",
+    "devnet:stop": "docker stop arcology",
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js --network arcology",
-    "reset": "rm -rf ignition/deployments/chain-118",
-    "test": "hardhat test --network arcology",
-    "monitor": "arcology.net-monitor http://localhost:8545"
+    "deploy:devnet": "hardhat run scripts/deploy.js --network devnet",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network testnet",
+    "reset": "rm -rf ignition/deployments",
+    "test": "hardhat test --network devnet",
+    "monitor:devnet": "arcology.net-monitor http://localhost:8545",
+    "monitor:testnet": "arcology.net-monitor https://arcology.majus.app"
   },
   "devDependencies": {
     "@arcologynetwork/concurrentlib": "^2.2.0",
