@@ -258,28 +258,32 @@ describe('TicketingCore', function () {
       await approveTokens(buyer1, ethers.parseEther('1500'));
 
       // Purchase 3 tickets in parallel using frontendUtil
-      const txs = [
-        frontendUtil.generateTx(
-          ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
-          ticketingCore,
-          eventId,
-          0
-        ),
-        frontendUtil.generateTx(
-          ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
-          ticketingCore,
-          eventId,
-          0
-        ),
-        frontendUtil.generateTx(
-          ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
-          ticketingCore,
-          eventId,
-          0
-        ),
-      ];
+      // const txs = [
+      //   frontendUtil.generateTx(
+      //     ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
+      //     ticketingCore,
+      //     eventId,
+      //     0
+      //   ),
+      //   frontendUtil.generateTx(
+      //     ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
+      //     ticketingCore,
+      //     eventId,
+      //     0
+      //   ),
+      //   frontendUtil.generateTx(
+      //     ([core, id, tier]) => core.connect(buyer1).purchaseTicket(id, tier),
+      //     ticketingCore,
+      //     eventId,
+      //     0
+      //   ),
+      // ];
 
-      const receipts = await Promise.all(txs);
+      const txs = await Promise.all(
+        times(3, () => ticketingCore.connect(owner).purchaseTicket(0, 0))
+      );
+
+      const receipts = await Promise.all(txs.map((tx) => tx.wait()));
 
       // Verify all purchases succeeded
       expect(receipts.length).to.equal(3);

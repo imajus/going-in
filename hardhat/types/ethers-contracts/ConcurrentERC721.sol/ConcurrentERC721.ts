@@ -6,7 +6,7 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 
   export interface ConcurrentERC721Interface extends Interface {
-    getFunction(nameOrSignature: "approve" | "balanceOf" | "burn" | "getApproved" | "isApprovedForAll" | "mint" | "minter" | "name" | "ownerOf" | "safeTransferFrom(address,address,uint256)" | "safeTransferFrom(address,address,uint256,bytes)" | "setApprovalForAll" | "supportsInterface" | "symbol" | "totalSupply" | "transferFrom"): FunctionFragment;
+    getFunction(nameOrSignature: "approve" | "balanceOf" | "burn" | "getApproved" | "isApprovedForAll" | "mint" | "minter" | "name" | "ownerOf" | "safeTransferFrom(address,address,uint256)" | "safeTransferFrom(address,address,uint256,bytes)" | "setApprovalForAll" | "supportsInterface" | "symbol" | "tokenURI" | "totalSupply" | "transferFrom"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "Approval" | "ApprovalForAll" | "Transfer"): EventFragment;
 
@@ -24,6 +24,7 @@ encodeFunctionData(functionFragment: 'safeTransferFrom(address,address,uint256,b
 encodeFunctionData(functionFragment: 'setApprovalForAll', values: [AddressLike, boolean]): string;
 encodeFunctionData(functionFragment: 'supportsInterface', values: [BytesLike]): string;
 encodeFunctionData(functionFragment: 'symbol', values?: undefined): string;
+encodeFunctionData(functionFragment: 'tokenURI', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'totalSupply', values?: undefined): string;
 encodeFunctionData(functionFragment: 'transferFrom', values: [AddressLike, AddressLike, BigNumberish]): string;
 
@@ -41,6 +42,7 @@ decodeFunctionResult(functionFragment: 'safeTransferFrom(address,address,uint256
 decodeFunctionResult(functionFragment: 'setApprovalForAll', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'supportsInterface', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'symbol', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'tokenURI', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'totalSupply', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'transferFrom', data: BytesLike): Result;
   }
@@ -228,6 +230,14 @@ decodeFunctionResult(functionFragment: 'transferFrom', data: BytesLike): Result;
     
 
     
+    tokenURI: TypedContractMethod<
+      [tokenId: BigNumberish, ],
+      [string],
+      'view'
+    >
+    
+
+    
     totalSupply: TypedContractMethod<
       [],
       [bigint],
@@ -313,6 +323,11 @@ getFunction(nameOrSignature: 'supportsInterface'): TypedContractMethod<
     >;
 getFunction(nameOrSignature: 'symbol'): TypedContractMethod<
       [],
+      [string],
+      'view'
+    >;
+getFunction(nameOrSignature: 'tokenURI'): TypedContractMethod<
+      [tokenId: BigNumberish, ],
       [string],
       'view'
     >;

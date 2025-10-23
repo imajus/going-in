@@ -53,6 +53,57 @@ describe('ConcurrentERC20', function () {
     });
   });
 
+  // ============ ERC-165 Interface Support Tests ============
+
+  describe('ERC-165 Interface Support', function () {
+    it('should support IERC20 interface', async function () {
+      // IERC20 interface ID: 0x36372b07
+      const IERC20_INTERFACE_ID = '0x36372b07';
+      expect(await token.supportsInterface(IERC20_INTERFACE_ID)).to.be.true;
+    });
+
+    it('should support IERC20Metadata interface', async function () {
+      // IERC20Metadata interface ID: 0xa219a025
+      const IERC20_METADATA_INTERFACE_ID = '0xa219a025';
+      expect(await token.supportsInterface(IERC20_METADATA_INTERFACE_ID)).to.be
+        .true;
+    });
+
+    it('should support IERC165 interface', async function () {
+      // IERC165 interface ID: 0x01ffc9a7
+      const IERC165_INTERFACE_ID = '0x01ffc9a7';
+      expect(await token.supportsInterface(IERC165_INTERFACE_ID)).to.be.true;
+    });
+
+    it('should not support random interface', async function () {
+      // Random interface ID
+      const RANDOM_INTERFACE_ID = '0xffffffff';
+      expect(await token.supportsInterface(RANDOM_INTERFACE_ID)).to.be.false;
+    });
+
+    it('should not support ERC721 interface', async function () {
+      // IERC721 interface ID: 0x80ac58cd
+      const IERC721_INTERFACE_ID = '0x80ac58cd';
+      expect(await token.supportsInterface(IERC721_INTERFACE_ID)).to.be.false;
+    });
+  });
+
+  // ============ Metadata Tests ============
+
+  describe('Token Metadata', function () {
+    it('should return correct name', async function () {
+      expect(await token.name()).to.equal('Test Token');
+    });
+
+    it('should return correct symbol', async function () {
+      expect(await token.symbol()).to.equal('TEST');
+    });
+
+    it('should return correct decimals', async function () {
+      expect(await token.decimals()).to.equal(18);
+    });
+  });
+
   // ============ Transfer Tests ============
 
   describe('Transfers', function () {

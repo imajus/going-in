@@ -2,6 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "@arcologynetwork/concurrentlib/lib/commutative/U256Cum.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title ConcurrentERC20
@@ -9,38 +12,29 @@ import "@arcologynetwork/concurrentlib/lib/commutative/U256Cum.sol";
  * @dev Based on Arcology's ds-token pattern with U256Cumulative for balance tracking
  * Reference: https://github.com/arcology-network/examples/blob/main/ds-token/contracts/Token.sol
  */
-contract ConcurrentERC20 {
+contract ConcurrentERC20 is IERC20, IERC20Metadata, IERC165 {
     // Token metadata
-    string public name;
-    string public symbol;
-    uint8 public constant decimals = 18;
+    string private _name;
+    string private _symbol;
 
     // Concurrent state variables
     U256Cumulative private _totalSupply;
     mapping(address => U256Cumulative) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    // Events per ERC20 standard
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
-
     /**
      * @notice Constructor to initialize token with name, symbol, and initial supply
-     * @param _name Token name
-     * @param _symbol Token symbol
+     * @param name_ Token name
+     * @param symbol_ Token symbol
      * @param _initialSupply Initial supply minted to contract deployer
      */
     constructor(
-        string memory _name,
-        string memory _symbol,
+        string memory name_,
+        string memory symbol_,
         uint256 _initialSupply
     ) {
-        name = _name;
-        symbol = _symbol;
+        _name = name_;
+        _symbol = symbol_;
 
         // Initialize total supply with bounds [0, type(uint256).max]
         _totalSupply = new U256Cumulative(0, type(uint256).max);
@@ -58,10 +52,46 @@ contract ConcurrentERC20 {
     }
 
     /**
+     * @notice ERC-165 interface detection
+     * @dev Returns true if this contract implements the requested interface
+     * @param interfaceId The interface identifier (4 bytes)
+     * @return True if the interface is supported
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC20).interfaceId ||
+               interfaceId == type(IERC20Metadata).interfaceId ||
+               interfaceId == type(IERC165).interfaceId;
+    }
+
+    /**
+     * @notice Get token name
+     * @return Token name
+     */
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @notice Get token symbol
+     * @return Token symbol
+     */
+    function symbol() public view override returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @notice Get token decimals
+     * @return Number of decimals (18)
+     */
+    function decimals() public view override returns (uint8) {
+        return 18;
+    }
+
+    /**
      * @notice Get total token supply
      * @return Current total supply
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _totalSupply.get();
     }
 
@@ -70,7 +100,7 @@ contract ConcurrentERC20 {
      * @param account Address to query
      * @return Current balance
      */
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) public view override returns (uint256) {
         if (address(_balances[account]) == address(0)) {
             return 0;
         }
@@ -83,7 +113,7 @@ contract ConcurrentERC20 {
      * @param amount Amount to transfer
      * @return success True if transfer succeeded
      */
-    function transfer(address to, uint256 amount) public returns (bool) {
+    function transfer(address to, uint256 amount) public override returns (bool) {
         _transfer(msg.sender, to, amount);
         return true;
     }
@@ -97,7 +127,7 @@ contract ConcurrentERC20 {
     function allowance(
         address owner,
         address spender
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -107,7 +137,7 @@ contract ConcurrentERC20 {
      * @param amount Amount to approve
      * @return success True if approval succeeded
      */
-    function approve(address spender, uint256 amount) public returns (bool) {
+    function approve(address spender, uint256 amount) public override returns (bool) {
         require(spender != address(0), "ERC20: approve to zero address");
 
         _allowances[msg.sender][spender] = amount;
@@ -126,7 +156,7 @@ contract ConcurrentERC20 {
         address from,
         address to,
         uint256 amount
-    ) public returns (bool) {
+    ) public override returns (bool) {
         uint256 currentAllowance = _allowances[from][msg.sender];
         require(currentAllowance >= amount, "ERC20: insufficient allowance");
 

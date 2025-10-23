@@ -4,6 +4,9 @@ pragma solidity ^0.8.19;
 import "@arcologynetwork/concurrentlib/lib/runtime/Runtime.sol";
 import "@arcologynetwork/concurrentlib/lib/map/U256.sol";
 import "@arcologynetwork/concurrentlib/lib/commutative/U256Cum.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title ConcurrentERC721
@@ -29,12 +32,20 @@ import "@arcologynetwork/concurrentlib/lib/commutative/U256Cum.sol";
  * - isApprovedForAll(address, address) → bool
  * - supportsInterface(bytes4) → bool (ERC-165)
  */
+/**
+ * @dev Note: This contract implements ERC-721 functionality but does NOT formally inherit
+ * IERC721/IERC721Metadata interfaces due to Arcology constraints:
+ * - ownerOf() and getApproved() cannot be `view` because U256Map.get() is not a view function
+ * - The contract is still ERC-721 compliant via ERC-165 supportsInterface()
+ * - All function signatures match ERC-721 except for view modifiers on ownerOf/getApproved
+ * - Use .staticCall when calling these functions from tests/frontend
+ */
 contract ConcurrentERC721 {
     // ============ State Variables ============
 
     // Metadata
-    string public name;
-    string public symbol;
+    string private _name;
+    string private _symbol;
 
     // Concurrent data structures
     U256Map private _owners; // tokenId → owner address (as uint160)
@@ -74,8 +85,8 @@ contract ConcurrentERC721 {
      * @param symbol_ Token symbol (e.g., "TICKET")
      */
     constructor(string memory name_, string memory symbol_) {
-        name = name_;
-        symbol = symbol_;
+        _name = name_;
+        _symbol = symbol_;
 
         // Initialize Arcology concurrent structures
         _owners = new U256Map();
@@ -93,11 +104,42 @@ contract ConcurrentERC721 {
      * @param interfaceId Interface identifier
      * @return bool True if interface is supported
      */
-    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
         return
-            interfaceId == 0x01ffc9a7 || // ERC-165
-            interfaceId == 0x80ac58cd || // ERC-721
-            interfaceId == 0x5b5e139f; // ERC-721 Metadata
+            interfaceId == type(IERC721).interfaceId ||
+            interfaceId == type(IERC721Metadata).interfaceId ||
+            interfaceId == type(IERC165).interfaceId;
+    }
+
+    // ============ Metadata Functions ============
+
+    /**
+     * @notice Get token collection name
+     * @return Token collection name
+     */
+    function name() external view returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @notice Get token collection symbol
+     * @return Token collection symbol
+     */
+    function symbol() external view returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @notice Get token URI for metadata
+     * @dev Returns empty string for now - can be extended to return IPFS/HTTP URI
+     * @dev Note: Skips existence check to maintain view compatibility (Arcology U256Map.get() is not view)
+     * @param tokenId Token ID to query
+     * @return Token URI (empty string)
+     */
+    function tokenURI(uint256 tokenId) external view returns (string memory) {
+        // Skip _exists check to maintain view compatibility with IERC721Metadata
+        // Real implementations would use baseURI + tokenId pattern
+        return "";
     }
 
     // ============ View Functions ============
@@ -129,6 +171,7 @@ contract ConcurrentERC721 {
 
     /**
      * @notice Get owner of a token
+     * @dev Cannot be view due to Arcology U256Map.get() (use .staticCall in tests/frontend)
      * @param tokenId Token ID to query
      * @return Address of token owner
      */
@@ -143,6 +186,7 @@ contract ConcurrentERC721 {
 
     /**
      * @notice Get approved address for a token
+     * @dev Cannot be view due to _exists() calling U256Map.get() (use .staticCall in tests/frontend)
      * @param tokenId Token ID to query
      * @return Address approved to transfer this token
      */
