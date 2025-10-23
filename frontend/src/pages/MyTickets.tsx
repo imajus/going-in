@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Calendar, MapPin, QrCode, RefreshCw, Ticket } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
-import { useUserTickets, type UserTicket, useInvalidateQueries } from "@/hooks/useEventData";
+import { useUserTickets, type UserTicket, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
 import { useTicketingCore } from "@/hooks/useContract";
 import { formatEther } from "ethers";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,7 @@ export default function MyTickets() {
   const { data: tickets = [], isLoading } = useUserTickets(address || null);
   const ticketingCore = useTicketingCore(true); // With signer for transactions
   const { invalidateUserTickets, invalidateEvent } = useInvalidateQueries();
+  const { data: tokenSymbol } = useTokenSymbol();
 
   // State for refund dialog
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
@@ -177,7 +178,7 @@ export default function MyTickets() {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <div className="text-2xl font-bold text-primary">{priceFormatted} Tokens</div>
+            <div className="text-2xl font-bold text-primary">{priceFormatted} {tokenSymbol || 'TOKEN'}</div>
           </div>
         </div>
 
@@ -346,7 +347,7 @@ export default function MyTickets() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Refund Amount:</span>
                 <span className="font-semibold text-primary">
-                  {formatEther(selectedTicket.price)} Tokens
+                  {formatEther(selectedTicket.price)} {tokenSymbol || 'TOKEN'}
                 </span>
               </div>
             </div>

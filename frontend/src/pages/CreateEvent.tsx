@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWallet } from "@/hooks/useWallet";
 import { useTicketingCore } from "@/hooks/useContract";
-import { useInvalidateQueries } from "@/hooks/useEventData";
+import { useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
 import { ethers } from "ethers";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ export default function CreateEvent() {
   const { isConnected } = useWallet();
   const contract = useTicketingCore(true);
   const { invalidateAllEvents } = useInvalidateQueries();
+  const { data: tokenSymbol } = useTokenSymbol();
 
   const [eventName, setEventName] = useState("");
   const [venue, setVenue] = useState("");
@@ -252,7 +253,7 @@ export default function CreateEvent() {
                           </div>
                           
                           <div className="space-y-2">
-                            <Label htmlFor={`tier-price-${index}`}>Price (USDC)</Label>
+                            <Label htmlFor={`tier-price-${index}`}>Price ({tokenSymbol || 'TOKEN'})</Label>
                             <Input
                               id={`tier-price-${index}`}
                               type="number"

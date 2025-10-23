@@ -9,7 +9,7 @@ import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { useTicketingCore, usePaymentToken } from "@/hooks/useContract";
-import { useEvent, useTokenBalance, useInvalidateQueries } from "@/hooks/useEventData";
+import { useEvent, useTokenBalance, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
 import { formatAddress } from "@/lib/web3";
 import { ethers } from "ethers";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ export default function EventDetails() {
   const eventId = id ? BigInt(id) : null;
   const { data: event, isLoading, error } = useEvent(eventId);
   const { data: tokenBalance } = useTokenBalance(address);
+  const { data: tokenSymbol } = useTokenSymbol();
 
   const [purchasingTier, setPurchasingTier] = useState<number | null>(null);
   const [mintingTokens, setMintingTokens] = useState(false);
@@ -192,7 +193,7 @@ export default function EventDetails() {
                     <div>
                       <p className="text-sm text-muted-foreground">Your Token Balance</p>
                       <p className="text-2xl font-bold">
-                        {tokenBalance ? ethers.formatUnits(tokenBalance, 18) : "0"} USDC
+                        {tokenBalance ? ethers.formatUnits(tokenBalance, 18) : "0"} {tokenSymbol || 'TOKEN'}
                       </p>
                     </div>
                     <Button
@@ -245,7 +246,7 @@ export default function EventDetails() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">{price} USDC</div>
+                          <div className="text-2xl font-bold text-primary">{price} {tokenSymbol || 'TOKEN'}</div>
                           <div className="text-sm text-muted-foreground">
                             {available} / {capacity} available
                           </div>
@@ -285,21 +286,21 @@ export default function EventDetails() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Total Capacity</span>
-                    <span className="font-bold">
+                    <span className="font-bold text-3xl">
                       {event.tiers.reduce((sum, t) => sum + Number(t.capacity), 0)}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Tickets Sold</span>
-                    <span className="font-bold text-primary">
+                    <span className="font-bold text-primary text-3xl">
                       {event.tiers.reduce((sum, t) => sum + Number(t.sold), 0)}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Available</span>
-                    <span className="font-bold text-accent">
+                    <span className="font-bold text-accent text-3xl">
                       {event.tiers.reduce((sum, t) => sum + (Number(t.capacity) - Number(t.sold)), 0)}
                     </span>
                   </div>

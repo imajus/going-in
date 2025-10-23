@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, MapPin, Ticket, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEvents } from "@/hooks/useEventData";
+import { useEvents, useTokenSymbol } from "@/hooks/useEventData";
 import { ethers } from "ethers";
 
 export default function Home() {
   const navigate = useNavigate();
   const { data: events, isLoading, error } = useEvents(20);
+  const { data: tokenSymbol } = useTokenSymbol();
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -79,8 +80,8 @@ export default function Home() {
           </div>
 
           {isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
                 <Card key={i} className="border-border/50 bg-card/50 backdrop-blur p-4">
                   <Skeleton className="h-32 w-full mb-4" />
                   <Skeleton className="h-6 w-3/4 mb-2" />
@@ -112,7 +113,7 @@ export default function Home() {
           )}
 
           {!isLoading && !error && events && events.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {events.map((event) => {
                 // Calculate total capacity and sold
                 const totalCapacity = event.tiers.reduce((sum, tier) => sum + Number(tier.capacity), 0);
@@ -151,9 +152,9 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between pt-10">
                         <span className="font-bold text-primary">
-                          From {minPrice.toFixed(2)} USDC
+                          From {minPrice.toFixed(2)} {tokenSymbol || 'TOKEN'}
                         </span>
                         <Button size="sm" disabled={isSoldOut} className="shadow-glow">
                           <Ticket className="mr-2 h-4 w-4" />

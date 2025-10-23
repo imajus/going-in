@@ -320,6 +320,26 @@ export function useTokenBalance(address: string | null) {
 }
 
 /**
+ * Hook to get payment token symbol (e.g., "USDC", "DAI")
+ */
+export function useTokenSymbol() {
+  const contract = usePaymentToken(false);
+
+  return useQuery({
+    queryKey: ['token-symbol'],
+    queryFn: async () => {
+      try {
+        return await contract.symbol();
+      } catch (error) {
+        console.error('Error fetching token symbol:', error);
+        return 'TOKEN'; // Fallback to generic "TOKEN" if fetch fails
+      }
+    },
+    staleTime: Infinity, // Token symbol never changes
+  });
+}
+
+/**
  * User ticket data structure
  */
 export interface UserTicket {

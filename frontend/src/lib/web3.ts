@@ -45,7 +45,7 @@ export function getReadOnlyProvider(): ethers.JsonRpcSigner {
   const provider = new ethers.JsonRpcProvider(ARCOLOGY_NETWORK.rpcUrl);
   return new ethers.JsonRpcSigner(
     provider,
-    '0x29fdceb21ac2f2c9012eea3aa12c1875bfa5f476'
+    '0xc8bc50ca2443f4ce0ebf1bc9396b7f53f62e9c13'
   );
 }
 

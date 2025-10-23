@@ -45,7 +45,7 @@ export default {
     },
     testnet: {
       type: 'http',
-      url: 'http://arco.vps.webdock.cloud:8545',
+      url: 'https://arcology.majus.app',
       accounts,
       chainId: 118,
     },
