@@ -522,6 +522,203 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ---
 
+## Phase 3: Blockchain Indexing & GraphQL Integration (Week 3)
+
+### 3.1 Envio HyperIndex Setup
+
+- [x] **Task 3.1.1**: Initialize Envio HyperIndex project
+
+  - Create `indexer/` workspace directory
+  - Run `envio init` to bootstrap project
+  - Configure `config.yaml` with Arcology Network settings:
+  - Set `unordered_multichain_mode: true`
+  - Set `preload_handlers: true`
+  - Verify pnpm package manager (v8+) and Node.js ≥18 installed
+  - Ensure Docker Desktop is running (required for local development)
+
+- [x] **Task 3.1.2**: Configure indexed contracts in config.yaml
+
+  - Add TicketingCore contract
+    - Event: EventCreated(uint256 indexed eventId, string name, string venue, uint256 timestamp, address indexed organizer, uint256 tierCount)
+    - Event: TicketPurchased(uint256 indexed eventId, uint256 indexed tierIdx, address indexed buyer, uint256 tokenId, uint256 price)
+    - Event: TicketRefunded(uint256 indexed eventId, uint256 indexed tierIdx, address indexed buyer, uint256 tokenId, uint256 refundAmount)
+    - Event: RevenueWithdrawn(uint256 indexed eventId, address indexed organizer, uint256 amount)
+  - Add ConcurrentERC20 contract
+    - Event: Transfer(address indexed from, address indexed to, uint256 value)
+    - Event: Approval(address indexed owner, address indexed spender, uint256 value)
+
+- [] **Task 3.1.3**: Design GraphQL schema with derived entities
+
+  - Create `schema.graphql` with raw event entities:
+    - `ConcurrentERC20_Transfer`
+    - `ConcurrentERC20_Approval`
+    - `TicketingCore_EventCreated`
+    - `TicketingCore_TicketPurchased`
+    - `TicketingCore_TicketRefunded`
+    - `TicketingCore_RevenueWithdrawn`
+  - Add derived analytics entities (pre-computed aggregates):
+    - `EventStats` - Per-event statistics (totalPurchases, totalRefunds, totalRevenue, netRevenue, revenueWithdrawn)
+    - `TierStats` - **Critical**: Per-tier availability tracking with real-time `soldCount` (purchases - refunds)
+    - `UserStats` - User portfolio (activeTickets, totalSpent, totalRefunded)
+    - `OrganizerStats` - Organizer metrics (eventsCreated, totalRevenue, totalWithdrawn)
+    - `PlatformStats` - Global platform statistics (singleton with id="platform")
+  - Define proper ID patterns: `eventId`, `{eventId}_{tierIdx}`, lowercase addresses, "platform"
+  - Use BigInt for currency amounts, Int for counters
+
+- [] **Task 3.1.4**: Implement event handlers with analytics logic
+
+  - Create `src/EventHandlers.js` with CommonJS module exports
+  - Add helper functions:
+    - `getBigInt(value)` - Safe BigInt conversion
+    - `getPlatformStats(context)` - Singleton platform stats retrieval
+  - Implement EventCreated handler:
+    - Store raw event entity
+    - Initialize EventStats with all counters to 0
+    - Update/Initialize OrganizerStats (increment eventsCreated)
+    - Update PlatformStats (increment totalEvents)
+  - Implement TicketPurchased handler:
+    - Store raw event entity
+    - Update EventStats (increment totalPurchases, add to totalRevenue, recalculate netRevenue)
+    - Update/Initialize TierStats (increment purchaseCount and soldCount, add to totalRevenue)
+    - Update/Initialize UserStats (increment totalTicketsPurchased and activeTickets, add to totalSpent)
+    - Update PlatformStats (increment totalTicketsSold, add to totalRevenue)
+  - Implement TicketRefunded handler:
+    - Store raw event entity
+    - Update EventStats (increment totalRefunds, add to totalRefundAmount, recalculate netRevenue)
+    - Update TierStats (increment refundCount, **decrement soldCount**, add to totalRefundAmount)
+    - Update UserStats (increment totalTicketsRefunded, decrement activeTickets, add to totalRefunded)
+    - Update PlatformStats (increment totalRefunds, add to totalRefundAmount)
+  - Implement RevenueWithdrawn handler:
+    - Store raw event entity
+    - Update EventStats (add to revenueWithdrawn)
+    - Update OrganizerStats (add to totalWithdrawn)
+  - Implement ConcurrentERC20 event handlers (Transfer, Approval) - store raw events only
+
+### 3.2 Frontend GraphQL Integration
+
+- [ ] **Task 3.2.1**: Install GraphQL dependencies
+
+  - Add to `frontend/package.json`:
+    - `graphql@^16.8.1` - GraphQL core library
+    - `graphql-request@^6.1.0` - Lightweight GraphQL client
+    - `@tanstack/react-query@^5.83.0` - Already installed for server state management
+  - Run `npm install` in frontend workspace
+  - Verify packages installed correctly
+
+- [ ] **Task 3.2.2**: Create GraphQL client utility (TypeScript)
+
+  - Create `frontend/src/lib/graphql.ts`
+  - Import `GraphQLClient` from `graphql-request`
+  - Configure client with indexer URL:
+    - Local dev: `http://localhost:8080/v1/graphql`
+    - Production: Environment variable `VITE_INDEXER_URL`
+  - Add headers: `Content-Type: application/json`
+  - Export configured `graphqlClient` instance
+  - Add TypeScript types for common GraphQL response structures
+
+- [ ] **Task 3.2.3**: Create GraphQL query hooks (TypeScript)
+
+  - Create `frontend/src/hooks/useGraphQL.ts`
+  - Import `useQuery` from `@tanstack/react-query`
+  - Import `graphqlClient` from `@/lib/graphql`
+  - Implement query hooks with proper TypeScript types:
+    - `useAllEvents()` - List all events from `TicketingCore_EventCreated`
+    - `useEventDetails(eventId)` - Fetch single event with EventStats
+    - `useTierAvailability(eventId, tierIdx)` - **Critical**: Fetch `TierStats.soldCount` for real-time availability
+    - `useUserPortfolio(address)` - Fetch UserStats and user's purchases/refunds
+    - `useOrganizerDashboard(address)` - Fetch OrganizerStats and organizer's events
+    - `usePlatformStats()` - Fetch global platform metrics (singleton)
+  - Configure refetch intervals:
+    - Critical queries (tier availability): 5 seconds
+    - Dashboard queries: 30 seconds
+    - Static queries (event details): 60 seconds
+  - Add error handling and loading states
+  - Use proper query keys for cache management
+
+- [ ] **Task 3.2.4**: Update Home page to use GraphQL queries
+
+  - Import `useEvents` hook
+  - Fetch events data from GraphQL instead of direct contract calls
+  - Query `TicketingCore_EventCreated` with filters:
+    - Upcoming events: `where: { timestamp: { _gt: currentTimestamp } }`
+    - Order by: `order_by: [{ timestamp: asc }]`
+    - Limit: Display first 6 events
+  - Show quick stats from EventStats (total sales, revenue)
+
+- [ ] **Task 3.2.5**: Update EventDetails page with real-time availability
+
+  - Import `useEvent` and `useTierAvailability` hooks
+  - Fetch event metadata from GraphQL instead of direct contract calls
+  - For each tier, query `TierStats` to get real-time `soldCount`
+  - Calculate available tickets: `tierCapacity - soldCount`
+  - **Critical**: Use `soldCount` from indexer (never compute client-side)
+  - Display EventStats metrics:
+    - Total purchases
+    - Total refunds
+    - Net revenue (for organizers)
+  - Update tier selector to use real-time availability data
+  - Add refetch on focus and on purchase success
+  - Show loading states while fetching tier availability
+
+- [ ] **Task 3.2.6**: Update MyTickets page with user portfolio
+
+  - Import `useUserTickets` hook
+  - Fetch UserStats for connected wallet:
+    - `activeTickets` - Currently owned tickets
+    - `totalTicketsPurchased` - Lifetime purchases
+    - `totalSpent` - Total amount spent
+    - `totalRefunded` - Total amount refunded
+  - Query `TicketingCore_TicketPurchased` filtered by buyer address
+  - Cross-reference with `TicketingCore_TicketRefunded` to show ticket status
+  - Display portfolio summary card with UserStats metrics
+  - List tickets grouped by event using GraphQL data
+  - Show "Active" or "Refunded" badge based on refund status
+  - Filter and display only active tickets by default
+  - Add "Show Refunded Tickets" toggle
+  - Update after refund transaction success
+
+- [ ] **Task 3.2.7**: Update Dashboard page with organizer analytics
+
+  - Import `useOrganizerEvents` hook
+  - Fetch OrganizerStats for connected wallet:
+    - `eventsCreated` - Number of events created
+    - `totalRevenue` - Total revenue across all events
+    - `totalWithdrawn` - Total amount withdrawn
+  - Query organizer's events via `TicketingCore_EventCreated` filtered by organizer
+  - For each event, fetch EventStats for detailed metrics:
+    - Total purchases
+    - Total refunds
+    - Net revenue
+    - Revenue withdrawn
+  - Fetch TierStats for per-tier breakdown (soldCount for each tier)
+  - Display analytics cards with summary metrics
+  - Create revenue chart showing revenue per event
+  - Add withdrawal history from `TicketingCore_RevenueWithdrawn` events
+  - Show real-time updates with 30-second refetch interval
+  - Update after withdrawal transaction success
+
+- [ ] **Task 3.2.8**: Create Platform Analytics page (optional)
+
+  - Create `frontend/src/pages/Analytics.tsx` (new page)
+  - Import `usePlatformStats` hook
+  - Query singleton `PlatformStats`:
+    - `totalEvents` - All events created
+    - `totalTicketsSold` - Platform-wide ticket sales
+    - `totalRefunds` - Platform-wide refunds
+    - `totalRevenue` - Total revenue generated
+    - `totalRefundAmount` - Total refunds processed
+  - Display global metrics in stat cards
+  - Query all EventStats and sort by totalPurchases (client-side)
+  - Display "Top Events" leaderboard
+  - Show recent activity feed from raw event entities:
+    - Recent purchases
+    - Recent refunds
+    - Recent events created
+  - Add route to Navigation component: `/analytics`
+  - Use recharts for data visualization (bar/line charts)
+
+---
+
 ## Continuous Tasks (Throughout All Phases)
 
 - [ ] **Git Workflow**

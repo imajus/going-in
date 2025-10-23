@@ -22,12 +22,14 @@ A blockchain-based ticketing platform leveraging Arcology's parallel execution c
 
 ### 1.3 Technology Stack
 
-- **Project Structure:** npm workspaces monorepo (hardhat + frontend)
+- **Project Structure:** npm workspaces monorepo (hardhat + frontend + indexer)
 - **Blockchain:** Arcology Network (EVM-compatible with parallel execution)
 - **Smart Contracts:** Solidity 0.8.19 with Arcology Concurrent Library
 - **Development Framework:** Hardhat v3 with Ignition deployment system
-- **Frontend:** Vite + React + TailwindCSS
+- **Blockchain Indexer:** Envio HyperIndex v2.31.0 with GraphQL API (Hasura)
+- **Frontend:** Vite + React + TailwindCSS + shadcn/ui
 - **Web3 Integration:** ethers.js v6 (direct wallet connection via BrowserProvider)
+- **Data Layer:** GraphQL (graphql-request) + React Query for server state
 - **Routing:** React Router v6
 - **Token Standards:** Custom ERC-721 and ERC-20 implementations with Arcology concurrent structures
 - **Build System:** Automatic ABI export and contract packaging for frontend consumption
@@ -40,41 +42,57 @@ A blockchain-based ticketing platform leveraging Arcology's parallel execution c
 graph TB
     subgraph "Frontend Layer"
         A[React + Vite Application]
-        B[TailwindCSS UI]
+        B[shadcn/ui Components]
         C[Web3 Provider - ethers.js]
+        D[GraphQL Client - React Query]
+    end
+
+    subgraph "Indexing Layer"
+        E[Envio HyperIndex]
+        F[PostgreSQL Database]
+        G[Hasura GraphQL API]
+        H[Event Handlers]
     end
 
     subgraph "Blockchain Layer - Arcology"
-        D[Smart Contract Layer]
-        E[Concurrent Framework]
+        I[Smart Contract Layer]
+        J[Concurrent Framework]
 
         subgraph "Core Contracts"
-            F[TicketingCore.sol]
-            G[ConcurrentERC721.sol]
-            H[ConcurrentERC20.sol]
+            K[TicketingCore.sol]
+            L[ConcurrentERC721.sol]
+            M[ConcurrentERC20.sol]
         end
 
         subgraph "Concurrent Structures"
-            I[U256Cumulative]
-            J[Concurrent Arrays]
-            K[Conflict Detector]
-            L[Parallel Executor]
+            N[U256Cumulative]
+            O[Concurrent Arrays]
+            P[Conflict Detector]
+            Q[Parallel Executor]
         end
     end
 
     A --> B
     A --> C
-    C --> D
-    D --> F
+    A --> D
+    C --> I
     D --> G
-    D --> H
-    F --> E
-    G --> E
-    H --> E
-    E --> I
-    E --> J
-    E --> K
-    E --> L
+    I --> K
+    I --> L
+    I --> M
+    K --> J
+    L --> J
+    M --> J
+    J --> N
+    J --> O
+    J --> P
+    J --> Q
+    K -.emit events.-> E
+    L -.emit events.-> E
+    M -.emit events.-> E
+    E --> H
+    H --> F
+    F --> G
 ```
 
 ### 2.2 Smart Contract Architecture
@@ -138,6 +156,14 @@ Root/
 │   ├── hardhat.config.js     # Network configs, Arcology RPC
 │   └── package.json          # Exports as npm package for frontend
 │
+├── indexer/                  # Envio HyperIndex blockchain indexer
+│   ├── config.yaml           # Network and contract configuration
+│   ├── schema.graphql        # GraphQL schema with derived entities
+│   ├── src/
+│   │   └── EventHandlers.js  # Event handlers with analytics logic
+│   ├── generated/            # Auto-generated types and utilities
+│   └── package.json          # pnpm workspace
+│
 └── frontend/                 # React frontend workspace
     ├── src/
     │   ├── components/       # React components
@@ -155,11 +181,13 @@ Root/
     │   │   └── OrganizerDashboard.jsx
     │   ├── lib/              # Core utilities
     │   │   ├── contracts.js  # Contract loading by chainId
-    │   │   └── web3.js       # ethers.js BrowserProvider setup
+    │   │   ├── web3.js       # ethers.js BrowserProvider setup
+    │   │   └── graphql.js    # GraphQL client for indexer API
     │   ├── hooks/            # React hooks
     │   │   ├── useContract.js
     │   │   ├── useWallet.js
-    │   │   └── useRealtime.js
+    │   │   ├── useRealtime.js
+    │   │   └── useGraphQL.js # GraphQL query hooks
     │   ├── utils/            # Helper functions
     │   │   ├── constants.js
     │   │   ├── formatters.js
@@ -168,6 +196,308 @@ Root/
     ├── vite.config.js
     └── package.json
 ```
+
+### 2.4 Blockchain Indexing Layer (Envio HyperIndex)
+
+#### 2.4.1 Architecture Overview
+
+Envio HyperIndex provides a real-time blockchain indexing solution that transforms on-chain events into structured, queryable data via a GraphQL API. The indexer runs as a separate service and maintains a PostgreSQL database with both raw event data and derived analytics entities.
+
+**Technology Stack:**
+
+- **Framework**: Envio HyperIndex v2.31.0
+- **Language**: JavaScript (CommonJS modules for event handlers)
+- **Package Manager**: pnpm v8+
+- **API**: GraphQL via Hasura (port 8080 locally)
+- **Database**: PostgreSQL (managed by Envio)
+- **Requirements**: Docker Desktop (local dev), Node.js ≥18
+
+**Indexed Contracts:**
+
+1. **TicketingCore**
+
+   - EventCreated
+   - TicketPurchased
+   - TicketRefunded
+   - RevenueWithdrawn
+
+2. **ConcurrentERC20**
+   - Transfer
+   - Approval
+
+#### 2.4.2 GraphQL Schema
+
+The indexer maintains two categories of entities:
+
+**Raw Event Entities** (direct blockchain event mappings):
+
+- `ConcurrentERC20_Transfer`
+- `ConcurrentERC20_Approval`
+- `TicketingCore_EventCreated`
+- `TicketingCore_TicketPurchased`
+- `TicketingCore_TicketRefunded`
+- `TicketingCore_RevenueWithdrawn`
+
+**Derived Analytics Entities** (pre-computed aggregates):
+
+1. **EventStats** - Per-event aggregated statistics
+
+   ```graphql
+   type EventStats {
+     id: ID! # eventId as string
+     eventId: BigInt!
+     totalPurchases: Int! # Total tickets purchased
+     totalRefunds: Int! # Total tickets refunded
+     totalRevenue: BigInt! # Sum of all purchase prices
+     totalRefundAmount: BigInt! # Sum of all refund amounts
+     netRevenue: BigInt! # totalRevenue - totalRefundAmount
+     revenueWithdrawn: BigInt! # Amount withdrawn by organizer
+   }
+   ```
+
+2. **TierStats** - Per-tier availability and revenue tracking
+
+   ```graphql
+   type TierStats {
+     id: ID! # "{eventId}_{tierIdx}"
+     eventId: BigInt!
+     tierIdx: BigInt!
+     soldCount: Int! # Current tickets sold (purchases - refunds)
+     purchaseCount: Int! # Total purchases ever made
+     refundCount: Int! # Total refunds ever made
+     totalRevenue: BigInt! # Total revenue for this tier
+     totalRefundAmount: BigInt! # Total refunded for this tier
+   }
+   ```
+
+3. **UserStats** - Per-user ticket portfolio
+
+   ```graphql
+   type UserStats {
+     id: ID! # Lowercase user address
+     address: String!
+     totalTicketsPurchased: Int! # Lifetime purchases
+     totalTicketsRefunded: Int! # Lifetime refunds
+     activeTickets: Int! # Currently owned (purchased - refunded)
+     totalSpent: BigInt! # Total amount spent
+     totalRefunded: BigInt! # Total amount refunded
+   }
+   ```
+
+4. **OrganizerStats** - Per-organizer performance metrics
+
+   ```graphql
+   type OrganizerStats {
+     id: ID! # Lowercase organizer address
+     address: String!
+     eventsCreated: Int! # Number of events created
+     totalRevenue: BigInt! # Total revenue across all events
+     totalWithdrawn: BigInt! # Total amount withdrawn
+   }
+   ```
+
+5. **PlatformStats** - Global platform metrics (singleton, id="platform")
+
+   ```graphql
+   type PlatformStats {
+     id: ID! # Always "platform"
+     totalEvents: Int! # All events created
+     totalTicketsSold: Int! # All tickets sold platform-wide
+     totalRefunds: Int! # All refunds
+     totalRevenue: BigInt! # Platform-wide revenue
+     totalRefundAmount: BigInt! # Platform-wide refunds
+   }
+   ```
+
+#### 2.4.3 Event Handler Logic
+
+Event handlers maintain derived entities in real-time using the following logic:
+
+**EventCreated Handler:**
+
+- Initialize EventStats for the new event (all counters to 0)
+- Update OrganizerStats (increment eventsCreated)
+- Update PlatformStats (increment totalEvents)
+
+**TicketPurchased Handler:**
+
+- Update EventStats (increment totalPurchases, add to totalRevenue, recalculate netRevenue)
+- Update/Initialize TierStats (increment purchaseCount, soldCount, add to totalRevenue)
+- Update/Initialize UserStats (increment totalTicketsPurchased, activeTickets, add to totalSpent)
+- Update PlatformStats (increment totalTicketsSold, add to totalRevenue)
+
+**TicketRefunded Handler:**
+
+- Update EventStats (increment totalRefunds, add to totalRefundAmount, recalculate netRevenue)
+- Update TierStats (increment refundCount, decrement soldCount, add to totalRefundAmount)
+- Update UserStats (increment totalTicketsRefunded, decrement activeTickets, add to totalRefunded)
+- Update PlatformStats (increment totalRefunds, add to totalRefundAmount)
+
+**RevenueWithdrawn Handler:**
+
+- Update EventStats (add to revenueWithdrawn)
+- Update OrganizerStats (add to totalWithdrawn)
+
+#### 2.4.4 GraphQL Query Patterns
+
+**Hasura GraphQL Syntax** (used by Envio):
+
+```graphql
+# Filter with equality operator
+query EventsByOrganizer($organizer: String!) {
+  TicketingCore_EventCreated(
+    where: { organizer: { _eq: $organizer } }
+    order_by: [{ timestamp: desc }]
+  ) {
+    eventId
+    name
+    venue
+  }
+}
+
+# Multiple filters with _and
+query TierAvailability($eventId: String!, $tierIdx: String!) {
+  TierStats(
+    where: {
+      _and: [{ eventId: { _eq: $eventId } }, { tierIdx: { _eq: $tierIdx } }]
+    }
+  ) {
+    soldCount
+    purchaseCount
+    refundCount
+  }
+}
+
+# Pagination
+query PaginatedEvents($limit: Int!, $offset: Int!) {
+  TicketingCore_EventCreated(
+    limit: $limit
+    offset: $offset
+    order_by: [{ timestamp: desc }]
+  ) {
+    eventId
+    name
+    timestamp
+  }
+}
+```
+
+**Common Filter Operators:**
+
+- `_eq` - Equals
+- `_gt` - Greater than
+- `_gte` - Greater than or equal
+- `_lt` - Less than
+- `_lte` - Less than or equal
+- `_in` - In array
+- `_and` - Logical AND
+- `_or` - Logical OR
+
+**Ordering:**
+
+- `order_by: [{ field: asc }]` - Ascending
+- `order_by: [{ field: desc }]` - Descending
+
+**Important Constraint:** Hasura aggregations (count, sum, avg) are disabled on Envio's hosted service for performance reasons. All aggregations are pre-computed in derived entities during indexing.
+
+#### 2.4.5 Frontend Integration Architecture
+
+**GraphQL Client Setup:**
+
+```javascript
+// frontend/src/lib/graphql.js
+import { GraphQLClient } from 'graphql-request';
+
+export const graphqlClient = new GraphQLClient(
+  process.env.VITE_INDEXER_URL || 'http://localhost:8080/v1/graphql',
+  {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+);
+```
+
+**React Query Hooks Pattern:**
+
+```javascript
+// frontend/src/hooks/useGraphQL.js
+import { useQuery } from '@tanstack/react-query';
+import { graphqlClient } from '@/lib/graphql';
+
+export const useTierAvailability = (eventId, tierIdx) => {
+  return useQuery({
+    queryKey: ['tierStats', eventId, tierIdx],
+    queryFn: async () => {
+      const query = `
+        query TierAvailability($eventId: String!, $tierIdx: String!) {
+          TierStats(where: {
+            id: { _eq: "${eventId}_${tierIdx}" }
+          }) {
+            soldCount
+            totalRevenue
+          }
+        }
+      `;
+      return graphqlClient.request(query, { eventId, tierIdx });
+    },
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+  });
+};
+```
+
+**Planned Frontend Changes:**
+
+1. **Event Discovery Page** (Home.jsx)
+
+   - Query all events via `TicketingCore_EventCreated`
+   - Display event cards with metadata (name, venue, timestamp)
+   - Filter by upcoming events using `timestamp: { _gt: currentTimestamp }`
+   - Show quick stats via EventStats (total purchases, revenue)
+
+2. **Event Details Page** (EventDetails.jsx)
+
+   - Fetch event metadata from `TicketingCore_EventCreated`
+   - **Critical:** Real-time tier availability via `TierStats.soldCount`
+   - Calculate available tickets: `tierCapacity - soldCount`
+   - Display purchase history count via `EventStats.totalPurchases`
+   - Show refund count via `EventStats.totalRefunds`
+
+3. **My Tickets Page** (MyTickets.jsx)
+
+   - Query `UserStats` for portfolio summary (activeTickets, totalSpent)
+   - List purchases via `TicketingCore_TicketPurchased` filtered by buyer
+   - Cross-reference refunds via `TicketingCore_TicketRefunded` to show ticket status
+   - Display NFT ownership via `ConcurrentERC721_Transfer` events
+
+4. **Organizer Dashboard** (OrganizerDashboard.jsx)
+
+   - Query `OrganizerStats` for aggregate metrics (eventsCreated, totalRevenue, totalWithdrawn)
+   - List organizer's events via `TicketingCore_EventCreated` filtered by organizer
+   - Per-event analytics via `EventStats` (sales, refunds, net revenue)
+   - Per-tier breakdown via `TierStats` (soldCount for each tier)
+   - Revenue withdrawal tracking via `TicketingCore_RevenueWithdrawn`
+
+5. **Platform Analytics** (Admin/Public Dashboard)
+   - Query singleton `PlatformStats` for global metrics
+   - Total events, tickets sold, revenue, refunds
+   - Top events by sales volume (client-side sort of EventStats by totalPurchases)
+   - Recent activity feed from raw event entities
+
+**Performance Optimization Strategy:**
+
+- Use React Query for automatic caching and background refetching
+- Implement optimistic updates for write operations
+- Poll critical queries (availability) every 5 seconds
+- Batch GraphQL queries using `@tanstack/react-query`'s parallel queries feature
+- Store frequently accessed data in React Query cache with 1-minute stale time
+
+**Hybrid Data Pattern:**
+
+- **Read Operations**: GraphQL API (fast, indexed, aggregated)
+- **Write Operations**: Direct smart contract calls via ethers.js
+- **Real-time Updates**: GraphQL polling + blockchain event listeners
+- **Availability Checks**: Always use `TierStats.soldCount` (never compute client-side)
 
 ## 3. Detailed Functional Requirements
 
@@ -486,7 +816,7 @@ Load Simulation: 200k * transactions in batch
   "engines": {
     "node": ">=20"
   },
-  "workspaces": ["frontend", "hardhat"]
+  "workspaces": ["frontend", "hardhat", "indexer"]
 }
 ```
 
@@ -523,6 +853,9 @@ Load Simulation: 200k * transactions in batch
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
+    "graphql": "^16.8.1",
+    "graphql-request": "^6.1.0",
+    "@tanstack/react-query": "^5.83.0",
     "axios": "^1.11.0",
     "lodash-es": "^4.17.21"
   },
@@ -540,3 +873,25 @@ Load Simulation: 200k * transactions in batch
   }
 }
 ```
+
+#### C4. Indexer Workspace Dependencies
+
+```json
+{
+  "name": "indexer",
+  "version": "0.1.0",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "envio": "2.31.0"
+  },
+  "devDependencies": {
+    "mocha": "10.2.0"
+  },
+  "packageManager": "pnpm@8.0.0"
+}
+```
+
+**Note:** Indexer requires Docker Desktop running for local development.
