@@ -18,6 +18,7 @@ export default function Home() {
       {/* Hero Section with Video Background */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Video Background */}
+        {import.meta.env.VITE_HERO_BACKGROUND_VIDEO && (
         <div className="absolute inset-0">
           <video
             autoPlay
@@ -26,13 +27,14 @@ export default function Home() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src={`/${import.meta.env.VITE_HERO_BACKGROUND_VIDEO ?? 'background.mp4'}`} type="video/mp4" />
+            <source src={import.meta.env.VITE_HERO_BACKGROUND_VIDEO} type="video/mp4" />
           </video>
           {/* Dark overlay for text readability */}
           <div className="absolute inset-0 bg-black/50"></div>
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary/20 to-accent/30"></div>
         </div>
+        )}
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent animate-fade-in">
