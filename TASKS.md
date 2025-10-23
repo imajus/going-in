@@ -547,7 +547,7 @@ This document breaks down the PRD into actionable development tasks organized by
     - Event: Transfer(address indexed from, address indexed to, uint256 value)
     - Event: Approval(address indexed owner, address indexed spender, uint256 value)
 
-- [] **Task 3.1.3**: Design GraphQL schema with derived entities
+- [x] **Task 3.1.3**: Design GraphQL schema with derived entities
 
   - Create `schema.graphql` with raw event entities:
     - `ConcurrentERC20_Transfer`
@@ -565,7 +565,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Define proper ID patterns: `eventId`, `{eventId}_{tierIdx}`, lowercase addresses, "platform"
   - Use BigInt for currency amounts, Int for counters
 
-- [] **Task 3.1.4**: Implement event handlers with analytics logic
+- [x] **Task 3.1.4**: Implement event handlers with analytics logic
 
   - Create `src/EventHandlers.js` with CommonJS module exports
   - Add helper functions:

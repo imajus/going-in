@@ -46,3 +46,55 @@ type TicketingCore_TicketRefunded {
   tokenId: BigInt!
   refundAmount: BigInt!
 }
+
+# Derived Analytics Entities
+# These are computed and maintained by event handlers for fast queries
+
+type EventStats {
+  id: ID!
+  eventId: BigInt!
+  totalPurchases: Int!
+  totalRefunds: Int!
+  totalRevenue: BigInt!
+  totalRefundAmount: BigInt!
+  netRevenue: BigInt!
+  revenueWithdrawn: BigInt!
+}
+
+type TierStats {
+  id: ID!
+  eventId: BigInt!
+  tierIdx: BigInt!
+  soldCount: Int!
+  purchaseCount: Int!
+  refundCount: Int!
+  totalRevenue: BigInt!
+  totalRefundAmount: BigInt!
+}
+
+type UserStats {
+  id: ID!
+  address: String!
+  totalTicketsPurchased: Int!
+  totalTicketsRefunded: Int!
+  activeTickets: Int!
+  totalSpent: BigInt!
+  totalRefunded: BigInt!
+}
+
+type OrganizerStats {
+  id: ID!
+  address: String!
+  eventsCreated: Int!
+  totalRevenue: BigInt!
+  totalWithdrawn: BigInt!
+}
+
+type PlatformStats {
+  id: ID!
+  totalEvents: Int!
+  totalTicketsSold: Int!
+  totalRefunds: Int!
+  totalRevenue: BigInt!
+  totalRefundAmount: BigInt!
+}
