@@ -10,12 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Structure
 
-This is an npm workspaces monorepo with two packages:
+This is an npm workspaces monorepo with three packages:
 
 ```
 going-in/
 ├── hardhat/           # Smart contracts workspace (Solidity + Hardhat v3)
-└── frontend/          # React frontend workspace (Vite + React + TailwindCSS)
+├── frontend/          # React frontend workspace (Vite + React + TailwindCSS)
+└── indexer/           # Envio HyperIndex blockchain indexer (GraphQL API)
 ```
 
 ## Development Commands
@@ -66,6 +67,24 @@ npm run start --workspace=frontend
 # Run ESLint
 npm run lint --workspace=frontend
 ```
+
+**Indexer Development:**
+
+```bash
+# Generate types from config.yaml and schema.graphql
+npm run codegen --workspace=indexer
+
+# Start local indexer with GraphQL API (port 8080)
+npm run dev --workspace=indexer
+
+# Start indexer against live network
+npm run start --workspace=indexer
+
+# Run tests
+npm run test --workspace=indexer
+```
+
+**Note:** The indexer requires Docker Desktop to be running for local development.
 
 ## Architecture Overview
 
@@ -173,6 +192,87 @@ The hardhat workspace exports these functions via `ethereum-scaffold-contracts`:
 - **Hardhat Ignition**: Uses modules in `hardhat/ignition/modules/` for deterministic deployments
 - **ABI Extraction**: ABIs are extracted directly from deployed contract instances using `contract.interface.formatJson()`
 - **Contract Distribution**: Deployment scripts create `hardhat/dist/{ContractName}.json` with deployment addresses and ABIs for browser integration
+
+### Indexer Architecture (Envio HyperIndex)
+
+The indexer provides a GraphQL API for querying blockchain events from the TicketingCore and ConcurrentERC20 contracts deployed on Arcology Network (Chain ID: 118).
+
+**Technology Stack:**
+
+- **Framework**: Envio HyperIndex v2.31.0 - Real-time blockchain indexing
+- **Language**: JavaScript (CommonJS modules)
+- **Package Manager**: pnpm (v8+)
+- **API**: GraphQL endpoint on port 8080 (local dev)
+- **Database**: PostgreSQL (managed by Envio)
+- **Requirements**: Docker Desktop (for local development), Node.js >=18
+
+**Indexed Contracts:**
+
+1. **TicketingCore** (0x1642dD5c38642f91E4aa0025978b572fe30Ed89d)
+   - EventCreated
+   - TicketPurchased
+   - TicketRefunded
+   - RevenueWithdrawn
+
+2. **ConcurrentERC20** (0xB1e0e9e68297aAE01347F6Ce0ff21d5f72D3fa0F)
+   - Transfer
+   - Approval
+
+**File Structure:**
+
+```
+indexer/
+├── config.yaml                    # Indexer configuration (networks, contracts, events)
+├── schema.graphql                 # GraphQL schema definitions
+├── src/
+│   └── EventHandlers.js           # Event handler implementations
+├── generated/                     # Auto-generated types and utilities
+├── test/                          # Test files
+├── .env                           # Environment variables
+├── .env.example                   # Example environment configuration
+├── package.json                   # Dependencies and scripts
+└── README.md                      # Basic usage documentation
+```
+
+**Event Handlers:**
+
+All event handlers follow the same pattern:
+```javascript
+ContractName.EventName.handler(async ({ event, context }) => {
+  const entity = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    // ... event parameters
+  };
+  context.EntityType.set(entity);
+});
+```
+
+**GraphQL Query Access:**
+
+When running locally (`pnpm dev`), the GraphQL Playground is available at:
+- URL: http://localhost:8080
+- Password: `testing`
+
+**Configuration:**
+
+- **Network**: Arcology Network via RPC `https://arcology.majus.app`
+- **Start Block**: 0 (indexes from genesis)
+- **Multichain Mode**: Enabled (`unordered_multichain_mode: true`)
+- **Handler Preloading**: Enabled (`preload_handlers: true`)
+
+**Code Generation:**
+
+The `pnpm codegen` command generates TypeScript types and utilities from `config.yaml` and `schema.graphql`. Always run this after modifying:
+- Contract events in `config.yaml`
+- GraphQL schema in `schema.graphql`
+
+**Integration with Frontend:**
+
+The frontend can query the indexer's GraphQL API to:
+- List all events with metadata (name, venue, timestamp, organizer)
+- Track ticket purchases and refunds by event/tier/buyer
+- Monitor revenue withdrawals
+- Display ERC20 token transfers and approvals
 
 ### Key Arcology-Specific Patterns
 
@@ -311,6 +411,15 @@ const { contract } = await connection.ignition.deploy(ModuleName);
 - next-themes: ^0.3.0
 - lodash-es: ^4.17.21
 
+**Indexer Dependencies:**
+
+- Node.js: >=18 (enforced in package.json engines)
+- pnpm: >=8 (package manager)
+- Envio HyperIndex: 2.31.0
+- Mocha: 10.2.0 (test framework)
+- Docker Desktop: Required for local development
+- PostgreSQL: Managed by Envio (not directly installed)
+
 ## Code Conventions
 
 ### Solidity (0.8.19)
@@ -377,6 +486,18 @@ Three TypeScript config files:
 - `tsconfig.app.json` - Application source code configuration
 - `tsconfig.node.json` - Node.js/Vite configuration scripts
 
+### JavaScript/Indexer (Envio)
+
+- CommonJS modules (uses `require()` and `module.exports`)
+- Event handlers in `src/EventHandlers.js`
+- camelCase for functions and variables, PascalCase for contract/event names
+- Always use async/await for event handlers
+- Entity IDs follow pattern: `${event.chainId}_${event.block.number}_${event.logIndex}`
+- Import generated types from `generated` package: `require('generated')`
+- Run `pnpm codegen` after modifying `config.yaml` or `schema.graphql`
+- All event handlers must set entities via `context.EntityType.set(entity)`
+- Follow Envio documentation: https://docs.envio.dev
+
 ## Project Documentation
 
 **Key Documents:**
@@ -394,6 +515,9 @@ Three TypeScript config files:
 3. **U256Cumulative in Structs**: Never include U256Cumulative fields in structs that need to be returned to frontend - use separate mappings instead
 4. **Refund Deadline**: Frontend must enforce 12-hour cutoff before event timestamp
 5. **Contract Deployment Synchronization**: After contract changes, re-run deployment scripts to update dist/{ContractName}.json files for frontend consumption
+6. **Indexer Code Generation**: After modifying `config.yaml` or `schema.graphql`, always run `pnpm codegen --workspace=indexer` before starting the indexer
+7. **Docker Requirement**: The indexer requires Docker Desktop to be running for local development (`pnpm dev`)
+8. **Indexer Contract Addresses**: When contracts are redeployed, update the contract addresses in `indexer/config.yaml` to match the new deployment addresses
 
 ## Network Configuration
 

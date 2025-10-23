@@ -1,0 +1,48 @@
+type ConcurrentERC20_Approval {
+  id: ID!
+  owner: String!
+  spender: String!
+  value: BigInt!
+}
+
+type ConcurrentERC20_Transfer {
+  id: ID!
+  from: String!
+  to: String!
+  value: BigInt!
+}
+
+type TicketingCore_EventCreated {
+  id: ID!
+  eventId: BigInt!
+  name: String!
+  venue: String!
+  timestamp: BigInt!
+  organizer: String!
+  tierCount: BigInt!
+}
+
+type TicketingCore_RevenueWithdrawn {
+  id: ID!
+  eventId: BigInt!
+  organizer: String!
+  amount: BigInt!
+}
+
+type TicketingCore_TicketPurchased {
+  id: ID!
+  eventId: BigInt!
+  tierIdx: BigInt!
+  buyer: String!
+  tokenId: BigInt!
+  price: BigInt!
+}
+
+type TicketingCore_TicketRefunded {
+  id: ID!
+  eventId: BigInt!
+  tierIdx: BigInt!
+  buyer: String!
+  tokenId: BigInt!
+  refundAmount: BigInt!
+}

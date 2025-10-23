@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: going-in-indexer
+networks:
+  - id: 118
+    rpc: https://arcology.majus.app
+    start_block: 0
+    contracts:
+      - name: TicketingCore
+        address:
+          - 0x1642dD5c38642f91E4aa0025978b572fe30Ed89d
+        handler: ./src/EventHandlers.js
+        events:
+          - event: EventCreated(uint256 indexed eventId, string name, string venue, uint256 timestamp, address indexed organizer, uint256 tierCount)
+          - event: RevenueWithdrawn(uint256 indexed eventId, address indexed organizer, uint256 amount)
+          - event: TicketPurchased(uint256 indexed eventId, uint256 indexed tierIdx, address indexed buyer, uint256 tokenId, uint256 price)
+          - event: TicketRefunded(uint256 indexed eventId, uint256 indexed tierIdx, address indexed buyer, uint256 tokenId, uint256 refundAmount)
+      - name: ConcurrentERC20
+        address:
+          - 0xB1e0e9e68297aAE01347F6Ce0ff21d5f72D3fa0F
+        handler: ./src/EventHandlers.js
+        events:
+          - event: Approval(address indexed owner, address indexed spender, uint256 value)
+          - event: Transfer(address indexed from, address indexed to, uint256 value)
+unordered_multichain_mode: true
+preload_handlers: true
