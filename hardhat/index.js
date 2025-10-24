@@ -1,3 +1,6 @@
+import { sampleSize } from 'lodash-es';
+import accounts from './accounts.json';
+
 // Auto-import all deployment JSON files from dist folder
 const deploymentModules = import.meta.glob('./dist/*.json', {
   eager: true,
@@ -40,4 +43,13 @@ export function getDeployment(contractName) {
  */
 export function getDeploymentNames() {
   return Object.keys(contracts);
+}
+
+/**
+ * Get random sample of account private keys
+ * @param {number} num - Number of random accounts to return
+ * @returns {string[]} Array of private key strings
+ */
+export function getSampleAccounts(num) {
+  return sampleSize(accounts, num);
 }

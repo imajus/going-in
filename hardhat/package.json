@@ -14,6 +14,8 @@
     "compile": "hardhat compile",
     "deploy:devnet": "hardhat run scripts/deploy.js --network devnet",
     "deploy:testnet": "hardhat run scripts/deploy.js --network testnet",
+    "seed:devnet": "hardhat run scripts/seed.js --network devnet",
+    "seed:testnet": "hardhat run scripts/seed.js --network testnet",
     "reset": "rm -rf ignition/deployments",
     "test": "hardhat test --network devnet",
     "monitor:devnet": "arcology.net-monitor http://localhost:8545",
@@ -25,6 +27,7 @@
     "@arcologynetwork/frontend-util": "^1.0.3",
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
     "@openzeppelin/contracts": "^4.9.6",
+    "@types/lodash-es": "^4.17.12",
     "dotenv": "^17.2.1",
     "hardhat": "^3.0.4",
     "lodash-es": "^4.17.21"

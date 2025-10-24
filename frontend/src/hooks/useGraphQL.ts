@@ -27,11 +27,14 @@ export function useAllEvents(options?: {
     queryKey: ['events', 'all', options],
     queryFn: async () => {
       const currentTimestamp = Math.floor(Date.now() / 1000);
-
       const query = `
         query GetAllEvents($currentTimestamp: Int, $limit: Int) {
           TicketingCore_EventCreated(
-            ${options?.upcomingOnly ? 'where: { timestamp: { _gt: $currentTimestamp } }' : ''}
+            ${
+              options?.upcomingOnly
+                ? 'where: { timestamp: { _gt: $currentTimestamp } }'
+                : ''
+            }
             order_by: [{ timestamp: asc }]
             ${options?.limit ? 'limit: $limit' : ''}
           ) {
@@ -45,12 +48,10 @@ export function useAllEvents(options?: {
           }
         }
       `;
-
       const variables = {
         currentTimestamp: options?.upcomingOnly ? currentTimestamp : undefined,
         limit: options?.limit,
       };
-
       const data = await graphqlClient.request<{
         TicketingCore_EventCreated: EventCreatedEntity[];
       }>(query, variables);
@@ -74,7 +75,6 @@ export function useEventDetails(eventId: string | undefined): UseQueryResult<{
     queryKey: ['events', 'details', eventId],
     queryFn: async () => {
       if (!eventId) return { event: null, stats: null };
-
       const query = `
         query GetEventDetails($eventId: numeric!) {
           TicketingCore_EventCreated(
@@ -101,7 +101,6 @@ export function useEventDetails(eventId: string | undefined): UseQueryResult<{
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         TicketingCore_EventCreated: EventCreatedEntity[];
         EventStats: EventStats[];
@@ -130,9 +129,7 @@ export function useTierAvailability(
     queryKey: ['tiers', 'availability', eventId, tierIdx],
     queryFn: async () => {
       if (eventId === undefined || tierIdx === undefined) return null;
-
       const tierId = `${eventId}_${tierIdx}`;
-
       const query = `
         query GetTierAvailability($tierId: String!) {
           TierStats(where: { id: { _eq: $tierId } }) {
@@ -147,7 +144,6 @@ export function useTierAvailability(
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         TierStats: TierStats[];
       }>(query, { tierId });
@@ -155,7 +151,7 @@ export function useTierAvailability(
       return data.TierStats[0] || null;
     },
     enabled: eventId !== undefined && tierIdx !== undefined,
-    refetchInterval: 5000, // 5 seconds - critical real-time data
+    refetchInterval: 2000, // 2 seconds - critical real-time data
     staleTime: 2000, // Very fresh data required
   });
 }
@@ -164,12 +160,13 @@ export function useTierAvailability(
  * Hook to fetch all tier statistics for an event
  * Used to display tier breakdown on event details page
  */
-export function useEventTiers(eventId: string | undefined): UseQueryResult<TierStats[]> {
+export function useEventTiers(
+  eventId: string | undefined
+): UseQueryResult<TierStats[]> {
   return useQuery({
     queryKey: ['tiers', 'event', eventId],
     queryFn: async () => {
       if (!eventId) return [];
-
       const query = `
         query GetEventTiers($eventId: numeric!) {
           TierStats(
@@ -187,16 +184,14 @@ export function useEventTiers(eventId: string | undefined): UseQueryResult<TierS
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         TierStats: TierStats[];
       }>(query, { eventId });
-
       return data.TierStats;
     },
     enabled: !!eventId,
-    refetchInterval: 5000, // 5 seconds - critical data
-    staleTime: 2000,
+    refetchInterval: 2000, // 2 seconds - critical data
+    staleTime: 2000, // Very fresh data required
   });
 }
 
@@ -215,9 +210,7 @@ export function useUserPortfolio(address: string | undefined): UseQueryResult<{
       if (!address) {
         return { stats: null, purchases: [], refunds: [] };
       }
-
       const lowerAddress = address.toLowerCase();
-
       const query = `
         query GetUserPortfolio($address: String!) {
           UserStats(where: { id: { _eq: $address } }) {
@@ -252,13 +245,11 @@ export function useUserPortfolio(address: string | undefined): UseQueryResult<{
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         UserStats: UserStats[];
         TicketingCore_TicketPurchased: TicketPurchasedEntity[];
         TicketingCore_TicketRefunded: TicketRefundedEntity[];
       }>(query, { address: lowerAddress });
-
       return {
         stats: data.UserStats[0] || null,
         purchases: data.TicketingCore_TicketPurchased,
@@ -275,7 +266,9 @@ export function useUserPortfolio(address: string | undefined): UseQueryResult<{
  * Hook to fetch organizer dashboard data
  * Includes OrganizerStats and all organizer's events
  */
-export function useOrganizerDashboard(address: string | undefined): UseQueryResult<{
+export function useOrganizerDashboard(
+  address: string | undefined
+): UseQueryResult<{
   stats: OrganizerStats | null;
   events: Array<{
     event: EventCreatedEntity;
@@ -290,9 +283,7 @@ export function useOrganizerDashboard(address: string | undefined): UseQueryResu
       if (!address) {
         return { stats: null, events: [], withdrawals: [] };
       }
-
       const lowerAddress = address.toLowerCase();
-
       const query = `
         query GetOrganizerDashboard($address: String!) {
           OrganizerStats(where: { id: { _eq: $address } }) {
@@ -324,13 +315,11 @@ export function useOrganizerDashboard(address: string | undefined): UseQueryResu
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         OrganizerStats: OrganizerStats[];
         TicketingCore_EventCreated: EventCreatedEntity[];
         TicketingCore_RevenueWithdrawn: RevenueWithdrawnEntity[];
       }>(query, { address: lowerAddress });
-
       // Fetch stats and tiers for each event
       const eventsWithDetails = await Promise.all(
         data.TicketingCore_EventCreated.map(async (event) => {
@@ -361,12 +350,10 @@ export function useOrganizerDashboard(address: string | undefined): UseQueryResu
               }
             }
           `;
-
           const details = await graphqlClient.request<{
             EventStats: EventStats[];
             TierStats: TierStats[];
           }>(detailsQuery, { eventId: event.eventId });
-
           return {
             event,
             stats: details.EventStats[0] || null,
@@ -374,7 +361,6 @@ export function useOrganizerDashboard(address: string | undefined): UseQueryResu
           };
         })
       );
-
       return {
         stats: data.OrganizerStats[0] || null,
         events: eventsWithDetails,
@@ -407,11 +393,9 @@ export function usePlatformStats(): UseQueryResult<PlatformStats | null> {
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         PlatformStats: PlatformStats[];
       }>(query);
-
       return data.PlatformStats[0] || null;
     },
     refetchInterval: 60000, // 60 seconds
@@ -449,11 +433,9 @@ export function useTopEvents(limit: number = 10): UseQueryResult<
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         EventStats: EventStats[];
       }>(query, { limit });
-
       // Fetch event details for each stat
       const eventsWithDetails = await Promise.all(
         data.EventStats.map(async (stats) => {
@@ -485,7 +467,6 @@ export function useTopEvents(limit: number = 10): UseQueryResult<
           };
         })
       );
-
       return eventsWithDetails;
     },
     refetchInterval: 60000, // 60 seconds
@@ -543,13 +524,11 @@ export function useRecentActivity(limit: number = 20): UseQueryResult<{
           }
         }
       `;
-
       const data = await graphqlClient.request<{
         TicketingCore_TicketPurchased: TicketPurchasedEntity[];
         TicketingCore_TicketRefunded: TicketRefundedEntity[];
         TicketingCore_EventCreated: EventCreatedEntity[];
       }>(query, { limit });
-
       return {
         purchases: data.TicketingCore_TicketPurchased,
         refunds: data.TicketingCore_TicketRefunded,
@@ -565,7 +544,9 @@ export function useRecentActivity(limit: number = 20): UseQueryResult<{
  * Hook to fetch user's active (non-refunded) tickets
  * Combines GraphQL portfolio data with contract tier configuration
  */
-export function useUserActiveTickets(address: string | undefined): UseQueryResult<UserTicket[]> {
+export function useUserActiveTickets(
+  address: string | undefined
+): UseQueryResult<UserTicket[]> {
   const contract = useTicketingCore(false);
   const { data: portfolio } = useUserPortfolio(address);
 
@@ -585,7 +566,9 @@ export function useUserActiveTickets(address: string | undefined): UseQueryResul
       if (activePurchases.length === 0) return [];
 
       // Extract unique event IDs for batch fetching
-      const uniqueEventIds = [...new Set(activePurchases.map((p) => p.eventId))];
+      const uniqueEventIds = [
+        ...new Set(activePurchases.map((p) => p.eventId)),
+      ];
 
       // Batch fetch: GraphQL event metadata + contract tier configs
       const eventDataMap = new Map();
@@ -629,9 +612,12 @@ export function useUserActiveTickets(address: string | undefined): UseQueryResul
         const tier = tierConfig?.tiers[tierIdx];
 
         // Calculate refund eligibility client-side
-        const eventTimestamp = gqlEvent ? BigInt(gqlEvent.timestamp) : BigInt(0);
+        const eventTimestamp = gqlEvent
+          ? BigInt(gqlEvent.timestamp)
+          : BigInt(0);
         const refundDeadline = eventTimestamp - BigInt(12 * 60 * 60);
-        const refundEligible = BigInt(Math.floor(Date.now() / 1000)) < refundDeadline;
+        const refundEligible =
+          BigInt(Math.floor(Date.now() / 1000)) < refundDeadline;
 
         return {
           eventId: BigInt(purchase.eventId),

@@ -14,8 +14,9 @@ import { ARCOLOGY_NETWORK, formatAddress } from "@/lib/web3";
 import { useEventDetails, useEventTiers } from "@/hooks/useGraphQL";
 import { ethers } from "ethers";
 import { toast } from "sonner";
-import { sampleSize } from "lodash-es";
-import accounts from "../../accounts.json";
+import { getSampleAccounts } from "ethereum-scaffold-contracts";
+
+const STRESS_TEST_BATCH_SIZE = 50;
 
 export default function EventDetails() {
   const { id } = useParams<{ id: string }>();
@@ -138,7 +139,6 @@ export default function EventDetails() {
   };
 
   const handleStressTest = async () => {
-    const BATCH_SIZE = 50;
     if (isStressTesting) {
       // Stop stress testing
       console.log("🛑 Stopping stress test...");
@@ -168,10 +168,10 @@ export default function EventDetails() {
       while (!stressTestAbortRef.current) {
         batchNumber++;
         console.log(`\n📦 Batch ${batchNumber}: Starting parallel purchases...`);
-        // Pick 10 random accounts
-        const selectedAccounts = sampleSize(accounts, BATCH_SIZE);
+        // Pick random accounts (pre-funded and pre-approved)
+        const selectedAccounts = getSampleAccounts(STRESS_TEST_BATCH_SIZE);
         console.log(`Selected ${selectedAccounts.length} accounts for batch ${batchNumber}`);
-        // Process all 10 accounts in parallel
+        // Process all accounts in parallel
         const purchasePromises = selectedAccounts.map(async (privateKey, idx) => {
           try {
             // Create wallet from private key
@@ -181,17 +181,9 @@ export default function EventDetails() {
             const tier = event.tiers[randomTierIdx];
             const price = tier.price;
             console.log(`  [Account ${idx + 1}] ${wallet.address.slice(0, 10)}... buying ${tier.name} for ${ethers.formatUnits(price, 18)} tokens`);
-            // Create contract instances for this wallet
+            // Create contract instance for this wallet
             const walletTicketingCore = contract.connect(wallet) as any;
-            const walletPaymentToken = paymentToken.connect(wallet) as any;
-            // Step 1: Mint tokens (with 2x buffer)
-            const mintAmount = price * 2n;
-            const mintTx = await walletPaymentToken.mint(wallet.address, mintAmount);
-            await mintTx.wait();
-            // Step 2: Approve tokens
-            const approveTx = await walletPaymentToken.approve(ticketingCoreAddress, price);
-            await approveTx.wait();
-            // Step 3: Purchase ticket
+            // Purchase ticket (tokens already minted and approved during deployment)
             const purchaseTx = await walletTicketingCore.purchaseTicket(event.id, BigInt(randomTierIdx));
             const receipt = await purchaseTx.wait();
             console.log(`  ✅ [Account ${idx + 1}] Purchase successful! Gas used: ${receipt.gasUsed.toString()}`);
@@ -210,7 +202,7 @@ export default function EventDetails() {
         invalidateEvent(event.id);
         // Small delay before next batch (to avoid overwhelming the network)
         if (!stressTestAbortRef.current) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
       console.log("✅ Stress test stopped");
@@ -365,7 +357,9 @@ export default function EventDetails() {
                         </div>
                       </div>
 
-                      <Progress value={soldPercentage} className="mb-4" />
+                      {soldPercentage > 0 && (
+                        <Progress value={soldPercentage} className="mb-4" />
+                      )}
 
                       <Button
                         className="w-full shadow-glow"
@@ -469,7 +463,7 @@ export default function EventDetails() {
                   <div>
                     <h3 className="font-bold mb-2">Stress Test</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Simulate high-load parallel purchases using 10 random accounts per batch. Check browser console for logs.
+                      Simulate high-load parallel purchases using <strong className="text-primary">{STRESS_TEST_BATCH_SIZE}</strong> random accounts per batch. Check browser console for logs.
                     </p>
                     <Button
                       onClick={handleStressTest}
