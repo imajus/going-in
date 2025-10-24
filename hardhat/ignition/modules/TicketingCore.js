@@ -10,17 +10,17 @@ const EVENTS = [
     tiers: [
       {
         name: 'Early Bird',
-        capacity: 500n,
+        capacity: 5500n,
         price: 50n * TOKEN_FACTOR, // 50 tokens
       },
       {
         name: 'General Admission',
-        capacity: 2000n,
+        capacity: 20000n,
         price: 100n * TOKEN_FACTOR, // 100 tokens
       },
       {
         name: 'VIP Pass',
-        capacity: 100n,
+        capacity: 1000n,
         price: 500n * TOKEN_FACTOR, // 500 tokens
       },
     ],
@@ -32,17 +32,17 @@ const EVENTS = [
     tiers: [
       {
         name: 'Nosebleed',
-        capacity: 5000n,
+        capacity: 15000n,
         price: 75n * TOKEN_FACTOR, // 75 tokens
       },
       {
         name: 'Floor Section',
-        capacity: 1000n,
+        capacity: 100000n,
         price: 200n * TOKEN_FACTOR, // 200 tokens
       },
       {
         name: 'VIP Meet & Greet',
-        capacity: 50n,
+        capacity: 1500n,
         price: 1500n * TOKEN_FACTOR, // 1500 tokens
       },
     ],
@@ -54,17 +54,17 @@ const EVENTS = [
     tiers: [
       {
         name: 'Upper Tier',
-        capacity: 10000n,
+        capacity: 100000n,
         price: 100n * TOKEN_FACTOR, // 100 tokens
       },
       {
         name: 'Lower Tier',
-        capacity: 3000n,
+        capacity: 30000n,
         price: 300n * TOKEN_FACTOR, // 300 tokens
       },
       {
         name: 'Club Seats',
-        capacity: 500n,
+        capacity: 5000n,
         price: 800n * TOKEN_FACTOR, // 800 tokens
       },
     ],

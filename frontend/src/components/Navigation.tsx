@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Ticket, Wallet, AlertCircle, Menu, Home, PlusCircle, TicketIcon, LayoutDashboard } from "lucide-react";
+import { Ticket, Wallet, AlertCircle, Menu, Home, PlusCircle, TicketIcon, LayoutDashboard, BarChart3 } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import { formatAddress } from "@/lib/web3";
 import { toast } from "sonner";
@@ -83,6 +83,14 @@ export const Navigation = () => {
               }`}
             >
               Dashboard
+            </Link>
+            <Link
+              to="/analytics"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive("/analytics") ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              Analytics
             </Link>
           </div>
 
@@ -196,6 +204,17 @@ export const Navigation = () => {
                   >
                     <LayoutDashboard className="h-5 w-5" />
                     <span className="font-medium">Dashboard</span>
+                  </Link>
+
+                  <Link
+                    to="/analytics"
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      isActive('/analytics') ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <BarChart3 className="h-5 w-5" />
+                    <span className="font-medium">Analytics</span>
                   </Link>
                 </div>
               </SheetContent>

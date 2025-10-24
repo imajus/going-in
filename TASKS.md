@@ -697,7 +697,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Show real-time updates with 30-second refetch interval
   - Update after withdrawal transaction success
 
-- [ ] **Task 3.2.8**: Create Platform Analytics page (optional)
+- [x] **Task 3.2.8**: Create Platform Analytics page (optional)
 
   - Create `frontend/src/pages/Analytics.tsx` (new page)
   - Import `usePlatformStats` hook
