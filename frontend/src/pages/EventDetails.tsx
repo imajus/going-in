@@ -4,15 +4,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MapPin, User, Clock, Ticket, TrendingUp, Loader2, Coins } from "lucide-react";
+import { Calendar, MapPin, User, Clock, Ticket, TrendingUp, Loader2, Coins, Zap } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { useTicketingCore, usePaymentToken } from "@/hooks/useContract";
 import { useEvent, useTokenBalance, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
-import { formatAddress } from "@/lib/web3";
+import { ARCOLOGY_NETWORK, formatAddress } from "@/lib/web3";
 import { ethers } from "ethers";
 import { toast } from "sonner";
+import { sampleSize } from "lodash-es";
+import accounts from "../../accounts.json";
 
 export default function EventDetails() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +30,18 @@ export default function EventDetails() {
 
   const [purchasingTier, setPurchasingTier] = useState<number | null>(null);
   const [mintingTokens, setMintingTokens] = useState(false);
+  const [isStressTesting, setIsStressTesting] = useState(false);
+  const stressTestAbortRef = useRef(false);
+
+  // Cleanup: Stop stress test when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isStressTesting) {
+        console.log("🛑 Component unmounting - stopping stress test...");
+        stressTestAbortRef.current = true;
+      }
+    };
+  }, [isStressTesting]);
 
   const handleMintTestTokens = async () => {
     if (!isConnected) {
@@ -110,6 +124,91 @@ export default function EventDetails() {
       }
     } finally {
       setPurchasingTier(null);
+    }
+  };
+
+  const handleStressTest = async () => {
+    const BATCH_SIZE = 50;
+    if (isStressTesting) {
+      // Stop stress testing
+      console.log("🛑 Stopping stress test...");
+      stressTestAbortRef.current = true;
+      setIsStressTesting(false);
+      return;
+    }
+    if (!event) {
+      console.error("No event loaded");
+      return;
+    }
+    // Start stress testing
+    console.log("🚀 Starting stress test...");
+    setIsStressTesting(true);
+    stressTestAbortRef.current = false;
+    try {
+      // Get provider and contract addresses
+      const provider = new ethers.JsonRpcProvider(ARCOLOGY_NETWORK.rpcUrl)
+      const network = await provider.getNetwork();
+      const ticketingCoreAddress = await contract.getAddress();
+      const paymentTokenAddress = await paymentToken.getAddress();
+      console.log("Network:", network.chainId);
+      console.log("TicketingCore:", ticketingCoreAddress);
+      console.log("PaymentToken:", paymentTokenAddress);
+      let batchNumber = 0;
+      // Infinite loop
+      while (!stressTestAbortRef.current) {
+        batchNumber++;
+        console.log(`\n📦 Batch ${batchNumber}: Starting parallel purchases...`);
+        // Pick 10 random accounts
+        const selectedAccounts = sampleSize(accounts, BATCH_SIZE);
+        console.log(`Selected ${selectedAccounts.length} accounts for batch ${batchNumber}`);
+        // Process all 10 accounts in parallel
+        const purchasePromises = selectedAccounts.map(async (privateKey, idx) => {
+          try {
+            // Create wallet from private key
+            const wallet = new ethers.Wallet(privateKey, provider);
+            // Pick random tier
+            const randomTierIdx = Math.floor(Math.random() * event.tiers.length);
+            const tier = event.tiers[randomTierIdx];
+            const price = tier.price;
+            console.log(`  [Account ${idx + 1}] ${wallet.address.slice(0, 10)}... buying ${tier.name} for ${ethers.formatUnits(price, 18)} tokens`);
+            // Create contract instances for this wallet
+            const walletTicketingCore = contract.connect(wallet) as any;
+            const walletPaymentToken = paymentToken.connect(wallet) as any;
+            // Step 1: Mint tokens (with 2x buffer)
+            const mintAmount = price * 2n;
+            const mintTx = await walletPaymentToken.mint(wallet.address, mintAmount);
+            await mintTx.wait();
+            // Step 2: Approve tokens
+            const approveTx = await walletPaymentToken.approve(ticketingCoreAddress, price);
+            await approveTx.wait();
+            // Step 3: Purchase ticket
+            const purchaseTx = await walletTicketingCore.purchaseTicket(event.id, BigInt(randomTierIdx));
+            const receipt = await purchaseTx.wait();
+            console.log(`  ✅ [Account ${idx + 1}] Purchase successful! Gas used: ${receipt.gasUsed.toString()}`);
+            return { success: true, account: idx + 1, tier: tier.name, gasUsed: receipt.gasUsed };
+          } catch (error: any) {
+            console.error(`  ❌ [Account ${idx + 1}] Purchase failed:`, error.message);
+            return { success: false, account: idx + 1, error: error.message };
+          }
+        });
+        // Wait for all purchases in this batch
+        const results = await Promise.all(purchasePromises);
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        console.log(`\n📊 Batch ${batchNumber} complete: ${successful} successful, ${failed} failed`);
+        // Invalidate event cache to refresh UI
+        invalidateEvent(event.id);
+        // Small delay before next batch (to avoid overwhelming the network)
+        if (!stressTestAbortRef.current) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      console.log("✅ Stress test stopped");
+    } catch (error: any) {
+      console.error("❌ Stress test error:", error);
+    } finally {
+      setIsStressTesting(false);
+      stressTestAbortRef.current = false;
     }
   };
 
@@ -315,6 +414,37 @@ export default function EventDetails() {
                     <p className="text-sm text-muted-foreground">
                       Every ticket is a unique NFT. No duplicates, no system crashes, atomic payment & delivery guaranteed.
                     </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Stress Test Button */}
+              <Card className="p-6 border-accent/20 bg-gradient-accent/5 backdrop-blur">
+                <div className="flex items-start gap-3 mb-4">
+                  <Zap className="h-6 w-6 text-accent mt-1" />
+                  <div>
+                    <h3 className="font-bold mb-2">Stress Test</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Simulate high-load parallel purchases using 10 random accounts per batch. Check browser console for logs.
+                    </p>
+                    <Button
+                      onClick={handleStressTest}
+                      disabled={!event}
+                      variant={isStressTesting ? "destructive" : "default"}
+                      className="w-full"
+                    >
+                      {isStressTesting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Stop Stress Testing
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="mr-2 h-4 w-4" />
+                          Stress Test
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </Card>
