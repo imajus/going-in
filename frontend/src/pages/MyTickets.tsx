@@ -22,11 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, QrCode, RefreshCw, Ticket } from "lucide-react";
+import { Calendar, MapPin, QrCode, RefreshCw, Ticket, TrendingUp, TrendingDown, ShoppingBag } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
-import { useUserTickets, type UserTicket, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
+import { type UserTicket, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
+import { useUserPortfolio, useUserActiveTickets } from "@/hooks/useGraphQL";
 import { useTicketingCore } from "@/hooks/useContract";
-import { formatEther } from "ethers";
+import { formatEther, ethers } from "ethers";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -36,7 +37,11 @@ import { formatAddress, formatTokenId } from "@/lib/web3";
 export default function MyTickets() {
   const { address, isConnected } = useWallet();
   const navigate = useNavigate();
-  const { data: tickets = [], isLoading } = useUserTickets(address || null);
+  const { data: tickets = [], isLoading } = useUserActiveTickets(address || undefined);
+
+  // Fetch user portfolio statistics from GraphQL indexer (30s refetch)
+  const { data: userPortfolio } = useUserPortfolio(address || undefined);
+
   const ticketingCore = useTicketingCore(true); // With signer for transactions
   const { invalidateUserTickets, invalidateEvent } = useInvalidateQueries();
   const { data: tokenSymbol } = useTokenSymbol();
@@ -259,6 +264,59 @@ export default function MyTickets() {
               Manage your NFT tickets and request refunds
             </p>
           </div>
+
+          {/* Portfolio Summary - Powered by GraphQL Indexer */}
+          {userPortfolio?.stats && (
+            <Card className="mb-8 p-6 border-primary/20 bg-gradient-primary/5 backdrop-blur">
+              <h2 className="text-xl font-bold mb-4 text-primary flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5" />
+                Portfolio Summary
+              </h2>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-card/50 rounded-lg border border-border/50">
+                  <div className="text-3xl font-bold text-primary mb-1">
+                    {userPortfolio.stats.activeTickets}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Active Tickets</div>
+                </div>
+
+                <div className="text-center p-4 bg-card/50 rounded-lg border border-border/50">
+                  <div className="text-3xl font-bold mb-1 flex items-center justify-center gap-1">
+                    <TrendingUp className="h-6 w-6 text-accent" />
+                    {userPortfolio.stats.totalTicketsPurchased}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Purchases</div>
+                </div>
+
+                <div className="text-center p-4 bg-card/50 rounded-lg border border-border/50">
+                  <div className="text-3xl font-bold mb-1 flex items-center justify-center gap-1">
+                    <TrendingDown className="h-6 w-6 text-destructive" />
+                    {userPortfolio.stats.totalTicketsRefunded}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Refunds</div>
+                </div>
+
+                <div className="text-center p-4 bg-card/50 rounded-lg border border-border/50">
+                  <div className="text-2xl font-bold text-primary mb-1">
+                    {ethers.formatUnits(userPortfolio.stats.totalSpent, 18)} {tokenSymbol || 'TOKEN'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Spent</div>
+                </div>
+              </div>
+
+              {userPortfolio.stats.totalRefunded !== "0" && (
+                <div className="mt-4 p-3 bg-accent/10 border border-accent/20 rounded-md text-center">
+                  <p className="text-sm">
+                    <span className="font-semibold text-accent">
+                      {ethers.formatUnits(userPortfolio.stats.totalRefunded, 18)} {tokenSymbol || 'TOKEN'}
+                    </span>
+                    {' '}refunded to your wallet
+                  </p>
+                </div>
+              )}
+            </Card>
+          )}
 
           {isLoading ? (
             <div className="space-y-4">

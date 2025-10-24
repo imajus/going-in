@@ -16,50 +16,34 @@ export interface EventData {
 
 /**
  * Tier data structure
+ * Note: sold counts come from GraphQL TierStats, not this interface
  */
 export interface TierData {
   name: string;
   capacity: bigint;
   price: bigint;
   nftContract: string;
-  sold: bigint; // Fetched separately via getTierAvailability
 }
 
 /**
- * Fetch event details from contract
+ * Fetch event details from contract (tier configuration only)
+ * Sold counts should be fetched from GraphQL TierStats
  */
-async function fetchEventDetails(
+export async function fetchEventDetails(
   contract: TicketingCore,
   eventId: bigint
 ): Promise<EventData | null> {
   try {
-    // Call getEventDetails - this returns basic event info without sold/revenue data
+    // Call getEventDetails - returns basic event info and tier configuration
     const eventDetails = await contract.getEventDetails(eventId);
 
-    // Fetch sold count for each tier using getTierAvailability
-    const tiersWithSold = await Promise.all(
-      eventDetails.tiers.map(async (tier: any, index: number) => {
-        try {
-          const [sold] = await contract.getTierAvailability.staticCall(eventId, BigInt(index));
-          return {
-            name: tier.name,
-            capacity: tier.capacity,
-            price: tier.price,
-            nftContract: tier.nftContract,
-            sold: sold,
-          };
-        } catch (error) {
-          console.error(`Error fetching sold count for tier ${index}:`, error);
-          return {
-            name: tier.name,
-            capacity: tier.capacity,
-            price: tier.price,
-            nftContract: tier.nftContract,
-            sold: BigInt(0),
-          };
-        }
-      })
-    );
+    // Extract tier configuration (no sold counts - use GraphQL for that)
+    const tiers = eventDetails.tiers.map((tier: any) => ({
+      name: tier.name,
+      capacity: tier.capacity,
+      price: tier.price,
+      nftContract: tier.nftContract,
+    }));
 
     return {
       id: eventDetails.id,
@@ -67,7 +51,7 @@ async function fetchEventDetails(
       venue: eventDetails.venue,
       timestamp: eventDetails.timestamp,
       organizer: eventDetails.organizer,
-      tiers: tiersWithSold,
+      tiers,
     };
   } catch (error: any) {
     // Silently return null for non-existent events (expected behavior)
@@ -172,109 +156,6 @@ export function useOrganizerEvents(organizerAddress: string | null, maxEvents: n
 }
 
 /**
- * Hook to fetch tier availability
- */
-export function useTierAvailability(eventId: bigint | null, tierIdx: bigint | null) {
-  const contract = useTicketingCore(false);
-
-  return useQuery({
-    queryKey: ['tier-availability', eventId?.toString(), tierIdx?.toString()],
-    queryFn: async () => {
-      if (eventId === null || tierIdx === null) {
-        return null;
-      }
-
-      try {
-        const availability = await contract.getTierAvailability.staticCall(eventId, tierIdx);
-        return {
-          sold: availability[0],
-          capacity: availability[1],
-        };
-      } catch (error) {
-        console.error('Error fetching tier availability:', error);
-        return null;
-      }
-    },
-    enabled: eventId !== null && tierIdx !== null,
-    refetchInterval: 2000, // Refetch every 2 seconds for real-time updates
-  });
-}
-
-/**
- * Hook to check if refund is available for an event
- */
-export function useCanRefund(eventId: bigint | null) {
-  const contract = useTicketingCore(false);
-
-  return useQuery({
-    queryKey: ['can-refund', eventId?.toString()],
-    queryFn: async () => {
-      if (eventId === null) {
-        return false;
-      }
-
-      try {
-        return await contract.canRefund.staticCall(eventId);
-      } catch (error) {
-        console.error('Error checking refund availability:', error);
-        return false;
-      }
-    },
-    enabled: eventId !== null,
-    refetchInterval: 10000, // Refetch every 10 seconds
-  });
-}
-
-/**
- * Hook to get refund deadline for an event
- */
-export function useRefundDeadline(eventId: bigint | null) {
-  const contract = useTicketingCore(false);
-
-  return useQuery({
-    queryKey: ['refund-deadline', eventId?.toString()],
-    queryFn: async () => {
-      if (eventId === null) {
-        return null;
-      }
-
-      try {
-        return await contract.getRefundDeadline.staticCall(eventId);
-      } catch (error) {
-        console.error('Error fetching refund deadline:', error);
-        return null;
-      }
-    },
-    enabled: eventId !== null,
-  });
-}
-
-/**
- * Hook to get available revenue for withdrawal
- */
-export function useAvailableRevenue(eventId: bigint | null) {
-  const contract = useTicketingCore(false);
-
-  return useQuery({
-    queryKey: ['available-revenue', eventId?.toString()],
-    queryFn: async () => {
-      if (eventId === null) {
-        return BigInt(0);
-      }
-
-      try {
-        return await contract.getAvailableRevenue.staticCall(eventId);
-      } catch (error) {
-        console.error('Error fetching available revenue:', error);
-        return BigInt(0);
-      }
-    },
-    enabled: eventId !== null,
-    refetchInterval: 5000,
-  });
-}
-
-/**
  * Hook to get payment token address
  */
 export function usePaymentTokenAddress() {
@@ -355,94 +236,6 @@ export interface UserTicket {
 }
 
 /**
- * Hook to fetch all tickets owned by a user
- */
-export function useUserTickets(userAddress: string | null) {
-  const contract = useTicketingCore(false);
-
-  return useQuery({
-    queryKey: ['user-tickets', userAddress],
-    queryFn: async () => {
-      if (!userAddress) {
-        return [];
-      }
-
-      try {
-        // Fetch latest block number (Arcology doesn't support "latest" as block specifier)
-        const provider = contract.runner?.provider;
-        if (!provider) {
-          throw new Error('Provider not available');
-        }
-        const latestBlock = await provider.getBlockNumber();
-
-        // Query TicketPurchased events for this user
-        const purchaseFilter = contract.filters.TicketPurchased(null, null, userAddress);
-        const purchaseEvents = await contract.queryFilter(purchaseFilter, 0, latestBlock);
-
-        // Query TicketRefunded events to filter out refunded tickets
-        const refundFilter = contract.filters.TicketRefunded(null, null, userAddress);
-        const refundEvents = await contract.queryFilter(refundFilter, 0, latestBlock);
-
-        // Create a set of refunded token IDs for quick lookup
-        const refundedTokens = new Set(
-          refundEvents.map((event) => {
-            const args = event.args as any;
-            return `${args.eventId.toString()}-${args.tokenId.toString()}`;
-          })
-        );
-
-        // Process purchase events and filter out refunded tickets
-        const ticketsPromises = purchaseEvents
-          .filter((event) => {
-            const args = event.args as any;
-            const key = `${args.eventId.toString()}-${args.tokenId.toString()}`;
-            return !refundedTokens.has(key);
-          })
-          .map(async (event) => {
-            const args = event.args as any;
-            const eventId = args.eventId;
-            const tierIdx = args.tierIdx;
-            const tokenId = args.tokenId;
-            const price = args.price;
-
-            // Fetch event details
-            const eventData = await fetchEventDetails(contract, eventId);
-
-            // Get tier info
-            const tierName = eventData?.tiers[Number(tierIdx)]?.name || 'Unknown Tier';
-            const nftContract = eventData?.tiers[Number(tierIdx)]?.nftContract || '';
-
-            // Check refund eligibility
-            const refundDeadline = eventData ? eventData.timestamp - BigInt(12 * 60 * 60) : null;
-            const refundEligible = refundDeadline ? BigInt(Math.floor(Date.now() / 1000)) < refundDeadline : false;
-
-            return {
-              eventId,
-              tierIdx,
-              tokenId,
-              price,
-              nftContract,
-              tierName,
-              eventData,
-              refundEligible,
-              refundDeadline,
-            } as UserTicket;
-          });
-
-        const tickets = await Promise.all(ticketsPromises);
-        return tickets;
-      } catch (error) {
-        console.error('Error fetching user tickets:', error);
-        return [];
-      }
-    },
-    enabled: userAddress !== null,
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
-    staleTime: 3000,
-  });
-}
-
-/**
  * Hook to invalidate queries after mutations
  */
 export function useInvalidateQueries() {
@@ -455,11 +248,6 @@ export function useInvalidateQueries() {
     },
     invalidateAllEvents: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-    },
-    invalidateTierAvailability: (eventId: bigint, tierIdx: bigint) => {
-      queryClient.invalidateQueries({
-        queryKey: ['tier-availability', eventId.toString(), tierIdx.toString()]
-      });
     },
     invalidateTokenBalance: (address: string) => {
       queryClient.invalidateQueries({ queryKey: ['token-balance', address] });

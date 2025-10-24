@@ -596,7 +596,7 @@ This document breaks down the PRD into actionable development tasks organized by
 
 ### 3.2 Frontend GraphQL Integration
 
-- [ ] **Task 3.2.1**: Install GraphQL dependencies
+- [x] **Task 3.2.1**: Install GraphQL dependencies
 
   - Add to `frontend/package.json`:
     - `graphql@^16.8.1` - GraphQL core library
@@ -605,7 +605,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Run `npm install` in frontend workspace
   - Verify packages installed correctly
 
-- [ ] **Task 3.2.2**: Create GraphQL client utility (TypeScript)
+- [x] **Task 3.2.2**: Create GraphQL client utility (TypeScript)
 
   - Create `frontend/src/lib/graphql.ts`
   - Import `GraphQLClient` from `graphql-request`
@@ -616,7 +616,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Export configured `graphqlClient` instance
   - Add TypeScript types for common GraphQL response structures
 
-- [ ] **Task 3.2.3**: Create GraphQL query hooks (TypeScript)
+- [x] **Task 3.2.3**: Create GraphQL query hooks (TypeScript)
 
   - Create `frontend/src/hooks/useGraphQL.ts`
   - Import `useQuery` from `@tanstack/react-query`
@@ -635,7 +635,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Add error handling and loading states
   - Use proper query keys for cache management
 
-- [ ] **Task 3.2.4**: Update Home page to use GraphQL queries
+- [x] **Task 3.2.4**: Update Home page to use GraphQL queries
 
   - Import `useEvents` hook
   - Fetch events data from GraphQL instead of direct contract calls
@@ -645,7 +645,7 @@ This document breaks down the PRD into actionable development tasks organized by
     - Limit: Display first 6 events
   - Show quick stats from EventStats (total sales, revenue)
 
-- [ ] **Task 3.2.5**: Update EventDetails page with real-time availability
+- [x] **Task 3.2.5**: Update EventDetails page with real-time availability
 
   - Import `useEvent` and `useTierAvailability` hooks
   - Fetch event metadata from GraphQL instead of direct contract calls
@@ -660,7 +660,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Add refetch on focus and on purchase success
   - Show loading states while fetching tier availability
 
-- [ ] **Task 3.2.6**: Update MyTickets page with user portfolio
+- [x] **Task 3.2.6**: Update MyTickets page with user portfolio
 
   - Import `useUserTickets` hook
   - Fetch UserStats for connected wallet:
@@ -677,7 +677,7 @@ This document breaks down the PRD into actionable development tasks organized by
   - Add "Show Refunded Tickets" toggle
   - Update after refund transaction success
 
-- [ ] **Task 3.2.7**: Update Dashboard page with organizer analytics
+- [x] **Task 3.2.7**: Update Dashboard page with organizer analytics
 
   - Import `useOrganizerEvents` hook
   - Fetch OrganizerStats for connected wallet:

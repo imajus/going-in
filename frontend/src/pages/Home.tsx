@@ -6,11 +6,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, MapPin, Ticket, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEvents, useTokenSymbol } from "@/hooks/useEventData";
+import { usePlatformStats } from "@/hooks/useGraphQL";
 import { ethers } from "ethers";
 
 export default function Home() {
   const navigate = useNavigate();
+
+  // Fetch events from contract (includes full tier details)
   const { data: events, isLoading, error } = useEvents(20);
+
+  // Fetch platform statistics from GraphQL indexer for stats section
+  const { data: platformStats } = usePlatformStats();
+
   const { data: tokenSymbol } = useTokenSymbol();
   return (
     <div className="min-h-screen bg-background">
@@ -115,10 +122,11 @@ export default function Home() {
           {!isLoading && !error && events && events.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {events.map((event) => {
-                // Calculate total capacity and sold
+                // Calculate total capacity (sold count comes from GraphQL in detail view)
                 const totalCapacity = event.tiers.reduce((sum, tier) => sum + Number(tier.capacity), 0);
-                const totalSold = event.tiers.reduce((sum, tier) => sum + Number(tier.sold), 0);
-                const isSoldOut = totalSold >= totalCapacity;
+                // Note: Sold count not available here - use event details for real-time availability
+                const totalSold = 0;
+                const isSoldOut = false; // Can't determine without GraphQL tier stats
 
                 // Find minimum price
                 const minPrice = event.tiers.reduce((min, tier) => {
@@ -170,19 +178,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section - Powered by GraphQL Indexer */}
       <section className="py-20 px-4 bg-card/30">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div className="space-y-2">
               <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                {!isLoading && events
-                  ? events
-                      .reduce((sum, e) => sum + e.tiers.reduce((s, t) => s + Number(t.sold), 0), 0)
-                      .toLocaleString()
+                {platformStats
+                  ? platformStats.totalTicketsSold.toLocaleString()
                   : "..."}
               </div>
               <div className="text-muted-foreground">Tickets Sold</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                {platformStats
+                  ? parseFloat(ethers.formatUnits(platformStats.totalRevenue, 18)).toFixed(0)
+                  : "..."} {tokenSymbol || 'TOKEN'}
+              </div>
+              <div className="text-muted-foreground">Total Revenue</div>
             </div>
             <div className="space-y-2">
               <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">

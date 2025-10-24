@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Download } from 'lucide-react';
 import { useTicketingCore } from '@/hooks/useContract';
-import { useAvailableRevenue, useInvalidateQueries } from '@/hooks/useEventData';
+import { useInvalidateQueries } from '@/hooks/useEventData';
 import { formatEther, parseEther } from 'ethers';
 import { toast } from 'sonner';
 
@@ -33,6 +33,7 @@ interface RevenueWithdrawalProps {
   eventId: bigint;
   canWithdraw: boolean;
   organizerAddress: string;
+  availableRevenue: bigint;
 }
 
 const withdrawalSchema = z.object({
@@ -46,12 +47,11 @@ const withdrawalSchema = z.object({
 
 type WithdrawalFormValues = z.infer<typeof withdrawalSchema>;
 
-export function RevenueWithdrawal({ eventId, canWithdraw, organizerAddress }: RevenueWithdrawalProps) {
+export function RevenueWithdrawal({ eventId, canWithdraw, organizerAddress, availableRevenue }: RevenueWithdrawalProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const ticketingCore = useTicketingCore(true);
-  const { data: availableRevenue = BigInt(0) } = useAvailableRevenue(eventId);
   const { invalidateEvent } = useInvalidateQueries();
 
   const availableRevenueFormatted = formatEther(availableRevenue);

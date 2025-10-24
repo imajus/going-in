@@ -5,38 +5,43 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, DollarSign, Download, TrendingUp, Users } from "lucide-react";
+import { Calendar, DollarSign, Download, TrendingUp, Users, RefreshCw } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
-import { useOrganizerEvents } from "@/hooks/useEventData";
-import { formatEther } from "ethers";
+import { useOrganizerEvents, useTokenSymbol } from "@/hooks/useEventData";
+import { useOrganizerDashboard } from "@/hooks/useGraphQL";
+import { formatEther, ethers } from "ethers";
 import { useNavigate } from "react-router-dom";
 import { RevenueWithdrawal } from "@/components/RevenueWithdrawal";
+import { computeAvailableRevenue } from "@/lib/utils";
 
 export default function Dashboard() {
   const { address, isConnected } = useWallet();
   const navigate = useNavigate();
   const { data: events = [], isLoading } = useOrganizerEvents(address || null);
+  const { data: tokenSymbol } = useTokenSymbol();
 
-  // Calculate aggregate statistics
+  // Fetch organizer analytics from GraphQL indexer (30s refetch)
+  const { data: organizerData } = useOrganizerDashboard(address || undefined);
+
+  // Calculate aggregate statistics from GraphQL data when available
   const stats = useMemo(() => {
-    let totalTicketsSold = 0;
-    let totalRevenue = BigInt(0);
-    let totalAvailable = BigInt(0);
-
-    events.forEach((event) => {
-      event.tiers.forEach((tier) => {
-        totalTicketsSold += Number(tier.sold);
-        totalRevenue += tier.sold * tier.price;
-      });
-    });
+    // Use GraphQL organizer stats if available, otherwise show basic event count
+    if (organizerData?.stats) {
+      return {
+        totalEvents: organizerData.stats.eventsCreated,
+        totalTicketsSold: 0, // We'll show this from individual event GraphQL data
+        totalRevenue: BigInt(0), // We'll show this from GraphQL
+        totalAvailable: BigInt(0),
+      };
+    }
 
     return {
       totalEvents: events.length,
-      totalTicketsSold,
-      totalRevenue,
-      totalAvailable,
+      totalTicketsSold: 0,
+      totalRevenue: BigInt(0),
+      totalAvailable: BigInt(0),
     };
-  }, [events]);
+  }, [events, organizerData]);
 
   // Show wallet connection prompt if not connected
   if (!isConnected || !address) {
@@ -102,7 +107,7 @@ export default function Dashboard() {
             </Card>
           ) : (
             <>
-              {/* Stats Overview */}
+              {/* Stats Overview - Powered by GraphQL Indexer */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <Card className="p-6 border-border/50 bg-card/50 backdrop-blur">
                   <div className="flex items-center gap-4">
@@ -110,7 +115,11 @@ export default function Dashboard() {
                       <TrendingUp className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <div className="text-2xl font-bold">{stats.totalEvents}</div>
+                      <div className="text-2xl font-bold">
+                        {organizerData?.stats
+                          ? organizerData.stats.eventsCreated
+                          : stats.totalEvents}
+                      </div>
                       <div className="text-sm text-muted-foreground">Total Events</div>
                     </div>
                   </div>
@@ -135,7 +144,9 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <div className="text-2xl font-bold">
-                        {parseFloat(formatEther(stats.totalRevenue)).toFixed(2)}
+                        {organizerData?.stats
+                          ? parseFloat(ethers.formatUnits(organizerData.stats.totalRevenue, 18)).toFixed(2)
+                          : parseFloat(formatEther(stats.totalRevenue)).toFixed(2)}
                       </div>
                       <div className="text-sm text-muted-foreground">Total Revenue</div>
                     </div>
@@ -149,9 +160,13 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <div className="text-2xl font-bold">
-                        {parseFloat(formatEther(stats.totalAvailable)).toFixed(2)}
+                        {organizerData?.stats
+                          ? parseFloat(ethers.formatUnits(organizerData.stats.totalWithdrawn, 18)).toFixed(2)
+                          : parseFloat(formatEther(stats.totalAvailable)).toFixed(2)}
                       </div>
-                      <div className="text-sm text-muted-foreground">Available</div>
+                      <div className="text-sm text-muted-foreground">
+                        {organizerData?.stats ? 'Total Withdrawn' : 'Available'}
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -160,20 +175,30 @@ export default function Dashboard() {
               {/* Events List */}
               <div className="space-y-6">
                 {events.map((event) => {
+                  // Find GraphQL event data for this event
+                  const gqlEventData = organizerData?.events.find(
+                    (e) => e.event.eventId === event.id.toString()
+                  );
+
                   const totalCapacity = event.tiers.reduce((sum, t) => sum + Number(t.capacity), 0);
-                  const totalSold = event.tiers.reduce((sum, t) => sum + Number(t.sold), 0);
+                  // Use GraphQL tier stats for sold count (fallback to 0 if not available)
+                  const totalSold = gqlEventData?.tiers
+                    ? gqlEventData.tiers.reduce((sum, t) => sum + t.soldCount, 0)
+                    : 0;
                   const soldPercentage = totalCapacity > 0 ? (totalSold / totalCapacity) * 100 : 0;
 
-                  // Calculate total revenue for this event
-                  const eventRevenue = event.tiers.reduce(
-                    (sum, tier) => sum + tier.sold * tier.price,
-                    BigInt(0)
-                  );
+                  // Use GraphQL event stats for revenue (fallback to 0 if not available)
+                  const eventRevenue = gqlEventData?.stats
+                    ? BigInt(gqlEventData.stats.totalRevenue)
+                    : BigInt(0);
 
                   // Calculate refund deadline (event timestamp - 12 hours)
                   const refundDeadline = Number(event.timestamp) - 12 * 60 * 60;
                   const refundDeadlineDate = new Date(refundDeadline * 1000);
                   const canWithdraw = Date.now() > refundDeadline * 1000;
+
+                  // Compute available revenue from GraphQL EventStats
+                  const availableRevenue = computeAvailableRevenue(gqlEventData?.stats || null);
 
                   return (
                     <Card key={event.id.toString()} className="p-6 border-border/50 bg-card/50 backdrop-blur">
@@ -210,14 +235,49 @@ export default function Dashboard() {
                         <Progress value={soldPercentage} />
                       </div>
 
+                      {/* GraphQL Event Analytics */}
+                      {gqlEventData?.stats && (
+                        <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                          <h3 className="text-sm font-semibold mb-3 text-primary">Event Analytics</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <div className="text-muted-foreground mb-1">Total Purchases</div>
+                              <div className="text-xl font-bold">{gqlEventData.stats.totalPurchases}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground mb-1">Total Refunds</div>
+                              <div className="text-xl font-bold text-destructive">
+                                {gqlEventData.stats.totalRefunds}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground mb-1">Net Revenue</div>
+                              <div className="text-xl font-bold text-accent">
+                                {parseFloat(ethers.formatUnits(gqlEventData.stats.netRevenue, 18)).toFixed(2)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground mb-1">Withdrawn</div>
+                              <div className="text-xl font-bold">
+                                {parseFloat(ethers.formatUnits(gqlEventData.stats.revenueWithdrawn, 18)).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Tier Breakdown */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         {event.tiers.map((tier, index) => {
-                          const tierSold = Number(tier.sold);
+                          // Use GraphQL TierStats for real-time soldCount if available
+                          const tierStat = gqlEventData?.tiers.find(
+                            (t) => Number(t.tierIdx) === index
+                          );
+                          const tierSold = tierStat ? tierStat.soldCount : 0;
                           const tierCapacity = Number(tier.capacity);
                           const tierSoldPercentage =
                             tierCapacity > 0 ? (tierSold / tierCapacity) * 100 : 0;
-                          const tierRevenue = tier.sold * tier.price;
+                          const tierRevenue = BigInt(tierSold) * tier.price;
 
                           return (
                             <Card key={index} className="p-4 border-primary/20 bg-background/30">
@@ -251,6 +311,7 @@ export default function Dashboard() {
                           eventId={event.id}
                           canWithdraw={canWithdraw}
                           organizerAddress={address!}
+                          availableRevenue={availableRevenue}
                         />
                         <Button
                           variant="outline"

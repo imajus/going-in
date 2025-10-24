@@ -11,6 +11,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { useTicketingCore, usePaymentToken } from "@/hooks/useContract";
 import { useEvent, useTokenBalance, useInvalidateQueries, useTokenSymbol } from "@/hooks/useEventData";
 import { ARCOLOGY_NETWORK, formatAddress } from "@/lib/web3";
+import { useEventDetails, useEventTiers } from "@/hooks/useGraphQL";
 import { ethers } from "ethers";
 import { toast } from "sonner";
 import { sampleSize } from "lodash-es";
@@ -24,7 +25,16 @@ export default function EventDetails() {
   const { invalidateEvent, invalidateTokenBalance } = useInvalidateQueries();
 
   const eventId = id ? BigInt(id) : null;
+
+  // Fetch event data from contract (includes tier configuration)
   const { data: event, isLoading, error } = useEvent(eventId);
+
+  // Fetch real-time tier availability from GraphQL indexer (5s refetch)
+  const { data: tierStats } = useEventTiers(id);
+
+  // Fetch event statistics from GraphQL indexer
+  const { data: eventDetails } = useEventDetails(id);
+
   const { data: tokenBalance } = useTokenBalance(address);
   const { data: tokenSymbol } = useTokenSymbol();
 
@@ -322,7 +332,10 @@ export default function EventDetails() {
                 <h2 className="text-2xl font-bold text-primary">Select Your Tier</h2>
 
                 {event.tiers.map((tier, index) => {
-                  const sold = Number(tier.sold);
+                  // Use GraphQL tierStats for real-time soldCount (5s updates)
+                  // Fallback to 0 if GraphQL not yet loaded
+                  const tierStat = tierStats?.find(ts => Number(ts.tierIdx) === index);
+                  const sold = tierStat ? tierStat.soldCount : 0;
                   const capacity = Number(tier.capacity);
                   const soldPercentage = (sold / capacity) * 100;
                   const available = capacity - sold;
@@ -393,16 +406,47 @@ export default function EventDetails() {
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Tickets Sold</span>
                     <span className="font-bold text-primary text-3xl">
-                      {event.tiers.reduce((sum, t) => sum + Number(t.sold), 0)}
+                      {tierStats && tierStats.length > 0
+                        ? tierStats.reduce((sum, ts) => sum + ts.soldCount, 0)
+                        : 0}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Available</span>
                     <span className="font-bold text-accent text-3xl">
-                      {event.tiers.reduce((sum, t) => sum + (Number(t.capacity) - Number(t.sold)), 0)}
+                      {tierStats && tierStats.length > 0
+                        ? event.tiers.reduce((sum, t) => sum + Number(t.capacity), 0) -
+                          tierStats.reduce((sum, ts) => sum + ts.soldCount, 0)
+                        : event.tiers.reduce((sum, t) => sum + Number(t.capacity), 0
+                          )}
                     </span>
                   </div>
+
+                  {/* Display additional GraphQL stats if available */}
+                  {eventDetails?.stats && (
+                    <>
+                      <div className="pt-4 border-t border-border/50" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Total Purchases</span>
+                        <span className="font-bold">
+                          {eventDetails.stats.totalPurchases}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Total Refunds</span>
+                        <span className="font-bold">
+                          {eventDetails.stats.totalRefunds}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Net Revenue</span>
+                        <span className="font-bold text-primary">
+                          {ethers.formatUnits(eventDetails.stats.netRevenue, 18)} {tokenSymbol || 'TOKEN'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </Card>
 
