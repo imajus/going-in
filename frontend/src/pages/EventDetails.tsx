@@ -16,7 +16,7 @@ import { ethers } from "ethers";
 import { toast } from "sonner";
 import { getSampleAccounts } from "ethereum-scaffold-contracts";
 
-const STRESS_TEST_BATCH_SIZE = 50;
+const STRESS_TEST_BATCH_SIZE = 99;
 
 export default function EventDetails() {
   const { id } = useParams<{ id: string }>();
@@ -214,7 +214,7 @@ export default function EventDetails() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (!event && !error)) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
@@ -234,7 +234,7 @@ export default function EventDetails() {
     );
   }
 
-  if (error || !event) {
+  if (error) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
@@ -242,7 +242,7 @@ export default function EventDetails() {
           <div className="container mx-auto py-12">
             <Card className="p-12 border-border/50 bg-card/50 backdrop-blur text-center">
               <p className="text-destructive mb-4">Failed to load event</p>
-              <p className="text-sm text-muted-foreground">{error?.message || "Event not found"}</p>
+              <p className="text-sm text-muted-foreground">{error.message || "Event not found"}</p>
             </Card>
           </div>
         </div>

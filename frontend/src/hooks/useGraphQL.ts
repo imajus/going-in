@@ -398,8 +398,8 @@ export function usePlatformStats(): UseQueryResult<PlatformStats | null> {
       }>(query);
       return data.PlatformStats[0] || null;
     },
-    refetchInterval: 60000, // 60 seconds
-    staleTime: 30000,
+    refetchInterval: 5000, // 5 seconds - live analytics
+    staleTime: 2000,
   });
 }
 
@@ -469,8 +469,8 @@ export function useTopEvents(limit: number = 10): UseQueryResult<
       );
       return eventsWithDetails;
     },
-    refetchInterval: 60000, // 60 seconds
-    staleTime: 30000,
+    refetchInterval: 5000, // 5 seconds - live leaderboard updates
+    staleTime: 2000,
   });
 }
 
@@ -535,8 +535,8 @@ export function useRecentActivity(limit: number = 20): UseQueryResult<{
         events: data.TicketingCore_EventCreated,
       };
     },
-    refetchInterval: 30000, // 30 seconds
-    staleTime: 15000,
+    refetchInterval: 5000, // 5 seconds - live activity feed
+    staleTime: 2000,
   });
 }
 

@@ -68,7 +68,7 @@ export async function fetchEventDetails(
  */
 export function useEvent(eventId: bigint | null) {
   const contract = useTicketingCore(false);
-
+  
   return useQuery({
     queryKey: ['event', eventId?.toString()],
     queryFn: () => (eventId ? fetchEventDetails(contract, eventId) : null),
