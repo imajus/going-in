@@ -2,8 +2,7 @@
 name: going-in-indexer
 networks:
   - id: 118
-    # rpc: https://arcology.majus.app
-    rpc: http://localhost:8545
+    rpc: https://arcology.majus.app
     start_block: 0
     contracts:
       - name: TicketingCore
