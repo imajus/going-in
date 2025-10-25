@@ -4,7 +4,7 @@
 const { ConcurrentERC20, TicketingCore } = require('generated');
 
 // Helper function to safely get BigInt value or default to 0
-const getBigInt = (value) => value ? BigInt(value) : 0n;
+const getBigInt = (value) => (value ? BigInt(value) : 0n);
 
 // Helper function to get or initialize PlatformStats (singleton)
 const getPlatformStats = async (context) => {
@@ -112,7 +112,8 @@ TicketingCore.RevenueWithdrawn.handler(async ({ event, context }) => {
   const eventStats = await context.EventStats.get(eventStatsId);
 
   if (eventStats) {
-    eventStats.revenueWithdrawn = getBigInt(eventStats.revenueWithdrawn) + getBigInt(event.params.amount);
+    eventStats.revenueWithdrawn =
+      getBigInt(eventStats.revenueWithdrawn) + getBigInt(event.params.amount);
     context.EventStats.set(eventStats);
   }
 
@@ -121,7 +122,8 @@ TicketingCore.RevenueWithdrawn.handler(async ({ event, context }) => {
   let organizerStats = await context.OrganizerStats.get(organizerId);
 
   if (organizerStats) {
-    organizerStats.totalWithdrawn = getBigInt(organizerStats.totalWithdrawn) + getBigInt(event.params.amount);
+    organizerStats.totalWithdrawn =
+      getBigInt(organizerStats.totalWithdrawn) + getBigInt(event.params.amount);
     context.OrganizerStats.set(organizerStats);
   }
 });
@@ -147,7 +149,9 @@ TicketingCore.TicketPurchased.handler(async ({ event, context }) => {
   if (eventStats) {
     eventStats.totalPurchases += 1;
     eventStats.totalRevenue = getBigInt(eventStats.totalRevenue) + price;
-    eventStats.netRevenue = getBigInt(eventStats.totalRevenue) - getBigInt(eventStats.totalRefundAmount);
+    eventStats.netRevenue =
+      getBigInt(eventStats.totalRevenue) -
+      getBigInt(eventStats.totalRefundAmount);
     context.EventStats.set(eventStats);
   }
 
@@ -221,8 +225,11 @@ TicketingCore.TicketRefunded.handler(async ({ event, context }) => {
 
   if (eventStats) {
     eventStats.totalRefunds += 1;
-    eventStats.totalRefundAmount = getBigInt(eventStats.totalRefundAmount) + refundAmount;
-    eventStats.netRevenue = getBigInt(eventStats.totalRevenue) - getBigInt(eventStats.totalRefundAmount);
+    eventStats.totalRefundAmount =
+      getBigInt(eventStats.totalRefundAmount) + refundAmount;
+    eventStats.netRevenue =
+      getBigInt(eventStats.totalRevenue) -
+      getBigInt(eventStats.totalRefundAmount);
     context.EventStats.set(eventStats);
   }
 
@@ -233,7 +240,8 @@ TicketingCore.TicketRefunded.handler(async ({ event, context }) => {
   if (tierStats) {
     tierStats.refundCount += 1;
     tierStats.soldCount -= 1;
-    tierStats.totalRefundAmount = getBigInt(tierStats.totalRefundAmount) + refundAmount;
+    tierStats.totalRefundAmount =
+      getBigInt(tierStats.totalRefundAmount) + refundAmount;
     context.TierStats.set(tierStats);
   }
 
@@ -251,6 +259,7 @@ TicketingCore.TicketRefunded.handler(async ({ event, context }) => {
   // Update PlatformStats
   const platformStats = await getPlatformStats(context);
   platformStats.totalRefunds += 1;
-  platformStats.totalRefundAmount = getBigInt(platformStats.totalRefundAmount) + refundAmount;
+  platformStats.totalRefundAmount =
+    getBigInt(platformStats.totalRefundAmount) + refundAmount;
   context.PlatformStats.set(platformStats);
 });
