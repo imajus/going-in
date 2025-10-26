@@ -1,6 +1,7 @@
 import hre from 'hardhat';
 import TicketingCoreModule from '../ignition/modules/TicketingCore.js';
 import accounts from '../accounts.json';
+import { chunk } from 'lodash-es';
 
 console.log('=== Funding Test Accounts ===');
 console.log(
@@ -22,19 +23,25 @@ const { ticketingCore, token } = await connection.ignition.deploy(
 
 // Process accounts
 let processedAccounts = 0;
-for (const pk of accounts) {
-  // Create wallets for this batch
-  const wallet = new ethers.Wallet(pk, ethers.provider);
-  // Mint tokens in parallel for this batch
-  const tx1 = await token.mint(wallet.address, MINT_AMOUNT);
-  await tx1.wait();
-  // Approve unlimited spending in parallel for this batch
-  const tx2 = await token.connect(wallet).approve(ticketingCore, MAX_UINT256);
-  await tx2.wait();
-  processedAccounts++;
-  console.log(
-    `  Processed ${processedAccounts}/${accounts.length} accounts...`
-  );
+
+const chunks = chunk(accounts, 20);
+
+for (const pks of chunks) {
+  const txs = pks.map(async (pk) => {
+    // Create wallets for this batch
+    const wallet = new ethers.Wallet(pk, ethers.provider);
+    // Mint tokens in parallel for this batch
+    const tx1 = await token.mint(wallet.address, MINT_AMOUNT);
+    await tx1.wait();
+    // Approve unlimited spending in parallel for this batch
+    const tx2 = await token.connect(wallet).approve(ticketingCore, MAX_UINT256);
+    await tx2.wait();
+    processedAccounts++;
+    console.log(
+      `  Processed ${processedAccounts}/${accounts.length} accounts...`
+    );
+  });
+  await Promise.all(txs);
 }
 
 console.log('✓ All test accounts funded and approved!');
