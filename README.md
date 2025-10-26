@@ -1,8 +1,88 @@
 ## Overview
 
-**Going-In** is a blockchain-based parallel ticketing system built for Arcology Network. This project leverages Arcology's parallel execution capabilities to achieve 10,000+ TPS, solving catastrophic failures in traditional ticketing platforms.
+**Goin In!** is a blockchain-based parallel ticketing system built for Arcology Network. This project leverages Arcology's parallel execution capabilities to achieve 10,000+ TPS, solving catastrophic failures in traditional ticketing platforms.
 
 The system uses atomic payment and ticket delivery with Arcology's concurrent structures (U256Cumulative), making duplicate sales and "charged but no ticket" scenarios mathematically impossible.
+
+### The Story
+
+When Jennifer Lopez tickets went on sale in Kazakhstan in April 2025, 25,000 fans watched their screens freeze for four hours. The platform controlling 90% of the country's ticketing market simply collapsed.
+When it finally recovered, people discovered they'd been charged for tickets that didn't exist, while others received duplicate tickets for the same seats. The CEO spent the entire night manually sorting through the chaos.
+
+This wasn't an isolated incident—when Taylor Swift announced her tour, Ticketmaster received 3.5 billion requests and had to cancel the public sale entirely. When Coldplay tickets went on sale in India, BookMyShow crashed within 10 minutes with a 1.3% success rate.
+
+### The Problem
+
+These failures happen because traditional ticketing platforms run on centralized servers built for moderate traffic, not millions of people clicking "buy" at the exact same moment. The architecture is fundamentally incapable of scaling to meet demand during the critical minutes when tickets go on sale. Even worse, when systems crash, the aftermath is catastrophic: phantom charges, duplicate sales, and zero accountability for the platforms despite threatening tens of millions of dollars in events.
+
+### The Solution
+
+**Goin' In!** solves this by leveraging **blockchain technology**. The blockchain approach delivers mathematical guarantees impossible with traditional platforms. Payment and ticket delivery happen atomically in a single transaction - you either get both or neither, making "charged but no ticket" scenarios physically impossible. Each ticket exists as a unique digital token with exactly one owner, eliminating duplicate sales by design.
+
+**Goin' In!** scales with **parallel transaction** execution, which addresses Ethereum's well-known congestion problem. While traditional blockchains process transactions one at a time like a single checkout line, parallel execution processes thousands simultaneously like having countless checkout lanes open at once. This means when thousands of fans hit "buy" at the same moment, the system processes all those requests in parallel rather than queuing them sequentially.
+
+When Kazakhstan's system crashed, the CEO admitted they created "a mass of incorrectly booked orders" - on blockchain, this can't happen because the protocol itself enforces correctness.
+
+## How It's Made
+
+**Backend**: Smart contracts built with **Solidity 0.8.19** deployed on Arcology Network, an EVM-compatible blockchain with parallel execution capabilities. The system uses **Hardhat v3** as the development framework with Ignition for deterministic deployments.
+
+**Frontend**: React 18 + Vite build system with ethers.js v6 for blockchain interaction, styled with TailwindCSS v4. The architecture uses npm workspaces as a monorepo structure separating contracts and frontend.
+
+### Arcology Parallel Execution Implementation
+
+The project's core innovation leverages **Arcology's concurrent library** to achieve conflict-free parallel transaction processing:
+
+**TicketingCore Smart Contract**: Each ticket tier uses `U256Cumulative` from `@arcologynetwork/concurrentlib` for tracking sold tickets. This data structure enables thousands of simultaneous purchases without read-write conflicts.
+
+**ConcurrentERC721 Smart Contract**: We implemented `ConcurrentERC721` from scratch using Arcology's concurrent primitives:
+
+- `U256Map` for token ownership tracking (tokenId → owner mapping)
+- `AddressU256Cum` for balance tracking with U256Cumulative per address
+- `Runtime.uuid()` for conflict-free unique token ID generation during parallel mints
+- Write-only mint operations that avoid reading state during concurrent execution
+
+**ConcurrentERC20 Smart Contract**: Uses `U256Cumulative` for all balance tracking, enabling parallel transfers between different address pairs without conflicts.
+
+The architecture strictly separates commutative operations (parallel-safe) from non-commutative ones. Ticket purchases only write state (increment sold count, mint NFT), never reading counts that other transactions might be modifying.
+
+Each purchase involves three contracts (ERC-20 payment, TicketingCore logic, ERC-721 minting) executing atomically. Arcology's parallel executor processes these complex transactions simultaneously across multiple users without serialization bottlenecks.
+
+**Benchmarking**: The benchmark suite is designed to test high-concurrency scenarios by generating and executing transactions from multiple test accounts simultaneously. See [BENCHMARK.md](./hardhat/BENCHMARK.md) for details.
+
+### Hardhat 3 Testing Strategy
+
+Hardhat 3's **native Solidity testing** framework is used for standard contract logic—deployment, access control, time-locked withdrawals, and basic validation.
+
+Arcology's concurrent primitives cannot be tested in Solidity's simulated EVM. All parallel execution tests are written in JavaScript using Hardhat's testing framework connected to actual Arcology DevNet:
+
+- 10+ simultaneous mint operations verifying unique UUID generation
+- Parallel purchases across multiple tiers with conflict detection
+- Mixed operations (mint + transfer + burn) validating state consistency
+- 100+ concurrent transaction stress tests measuring TPS and conflict rate
+
+**Hardhat Ignition** cannot be used in tests because Hardhat testnet can't be used. All test deployments use `ethers.getContractFactory()` and `.deploy()` pattern, while production deployments use Ignition modules for deterministic addresses.
+
+### Envio HyperIndex Integration
+
+The project uses Envio **HyperIndex v2.31.0** to provide a real-time GraphQL API for querying blockchain state without expensive RPC calls or client-side filtering.
+
+The indexer tracks two deployed contracts on Arcology Network (Chain ID: 118):
+
+- `TicketingCore` - Captures event creation, ticket purchases, refunds, and revenue withdrawals
+- `ConcurrentERC20` - Tracks token transfers and approvals
+
+Beyond storing raw blockchain events, the indexer computes aggregated statistics in real-time through event handlers in `EventHandlers.js`. Each blockchain event triggers cascading updates across multiple entity types:
+
+- `EventStats` - Per-event metrics (total purchases, refunds, net revenue)
+- `TierStats` - Per-tier availability and sales data
+- `UserStats` - User purchase history and active ticket counts
+- `OrganizerStats` - Event organizer revenue and withdrawal tracking
+- `PlatformStats` - Global platform metrics (singleton entity)
+
+### Disclamer
+
+Due to a [bug](https://github.com/arcology-network/main/issues/11) in Arcology DevNet implementation, rollbacked transactions are still triggering events, which may result in an inaccurate number of purchased tickets displayed in the frontend. However, based on my tests, the integrity of the smart contract data is preserved.
 
 ## Prerequisites for Development
 
@@ -143,6 +223,7 @@ Configure the following variables:
 #### Network Configuration
 
 The project is configured to deploy to Arcology DevNet by default:
+
 - **Network**: Arcology DevNet
 - **RPC URL**: http://arco.vps.webdock.cloud:8545
 - **Chain ID**: 118
@@ -153,6 +234,7 @@ To deploy to other networks, update network configurations in `hardhat/hardhat.c
 ### Technology Stack
 
 **Frontend:**
+
 - **Language**: TypeScript 5.8
 - **Framework**: React 18 with React Router v6
 - **Build Tool**: Vite 5.4 with SWC plugin
@@ -165,6 +247,7 @@ To deploy to other networks, update network configurations in `hardhat/hardhat.c
 - **Theming**: next-themes for dark/light mode
 
 **Blockchain:**
+
 - **Network**: Arcology Network (parallel execution blockchain)
 - **Library**: Ethers.js v6
 - **Wallet**: Reown AppKit (formerly WalletConnect)
