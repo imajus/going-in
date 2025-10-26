@@ -1,3 +1,5 @@
 # hardhat
 /cache
 /artifacts
+/benchmark/txs
+/ignition/deployments/benchmark/
