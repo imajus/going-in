@@ -31,54 +31,25 @@ When Kazakhstan's system crashed, the CEO admitted they created "a mass of incor
 
 ### Arcology Parallel Execution Implementation
 
-The project's core innovation leverages **Arcology's concurrent library** to achieve conflict-free parallel transaction processing:
-
-**TicketingCore Smart Contract**: Each ticket tier uses `U256Cumulative` from `@arcologynetwork/concurrentlib` for tracking sold tickets. This data structure enables thousands of simultaneous purchases without read-write conflicts.
-
-**ConcurrentERC721 Smart Contract**: We implemented `ConcurrentERC721` from scratch using Arcology's concurrent primitives:
-
-- `U256Map` for token ownership tracking (tokenId → owner mapping)
-- `AddressU256Cum` for balance tracking with U256Cumulative per address
-- `Runtime.uuid()` for conflict-free unique token ID generation during parallel mints
-- Write-only mint operations that avoid reading state during concurrent execution
-
-**ConcurrentERC20 Smart Contract**: Uses `U256Cumulative` for all balance tracking, enabling parallel transfers between different address pairs without conflicts.
-
-The architecture strictly separates commutative operations (parallel-safe) from non-commutative ones. Ticket purchases only write state (increment sold count, mint NFT), never reading counts that other transactions might be modifying.
+The project's core innovation leverages **Arcology's concurrent library** to achieve conflict-free parallel transaction processing.
 
 Each purchase involves three contracts (ERC-20 payment, TicketingCore logic, ERC-721 minting) executing atomically. Arcology's parallel executor processes these complex transactions simultaneously across multiple users without serialization bottlenecks.
 
-**Benchmarking**: The benchmark suite is designed to test high-concurrency scenarios by generating and executing transactions from multiple test accounts simultaneously. See [BENCHMARK.md](./hardhat/BENCHMARK.md) for details.
+See more details on this [here](./docs/integrations/arcology.md).
 
 ### Hardhat 3 Testing Strategy
 
 Hardhat 3's **native Solidity testing** framework is used for standard contract logic—deployment, access control, time-locked withdrawals, and basic validation.
 
-Arcology's concurrent primitives cannot be tested in Solidity's simulated EVM. All parallel execution tests are written in JavaScript using Hardhat's testing framework connected to actual Arcology DevNet:
+**Hardhat Ignition** is used for smart contract deployment management.
 
-- 10+ simultaneous mint operations verifying unique UUID generation
-- Parallel purchases across multiple tiers with conflict detection
-- Mixed operations (mint + transfer + burn) validating state consistency
-- 100+ concurrent transaction stress tests measuring TPS and conflict rate
-
-**Hardhat Ignition** cannot be used in tests because Hardhat testnet can't be used. All test deployments use `ethers.getContractFactory()` and `.deploy()` pattern, while production deployments use Ignition modules for deterministic addresses.
+See more details on this [here](./docs/integrations/hardhat.md).
 
 ### Envio HyperIndex Integration
 
 The project uses Envio **HyperIndex v2.31.0** to provide a real-time GraphQL API for querying blockchain state without expensive RPC calls or client-side filtering.
 
-The indexer tracks two deployed contracts on Arcology Network (Chain ID: 118):
-
-- `TicketingCore` - Captures event creation, ticket purchases, refunds, and revenue withdrawals
-- `ConcurrentERC20` - Tracks token transfers and approvals
-
-Beyond storing raw blockchain events, the indexer computes aggregated statistics in real-time through event handlers in `EventHandlers.js`. Each blockchain event triggers cascading updates across multiple entity types:
-
-- `EventStats` - Per-event metrics (total purchases, refunds, net revenue)
-- `TierStats` - Per-tier availability and sales data
-- `UserStats` - User purchase history and active ticket counts
-- `OrganizerStats` - Event organizer revenue and withdrawal tracking
-- `PlatformStats` - Global platform metrics (singleton entity)
+See more details in this [here](./docs/integrations/envio.md).
 
 ### Disclamer
 
