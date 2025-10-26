@@ -1,49 +1,49 @@
 type ConcurrentERC20_Approval {
   id: ID!
-  owner: String!
-  spender: String!
+  owner: String! @index
+  spender: String! @index
   value: BigInt!
 }
 
 type ConcurrentERC20_Transfer {
   id: ID!
-  from: String!
-  to: String!
+  from: String! @index
+  to: String! @index
   value: BigInt!
 }
 
 type TicketingCore_EventCreated {
   id: ID!
-  eventId: BigInt!
+  eventId: BigInt! @index
   name: String!
   venue: String!
   timestamp: BigInt!
-  organizer: String!
+  organizer: String! @index
   tierCount: BigInt!
 }
 
 type TicketingCore_RevenueWithdrawn {
   id: ID!
-  eventId: BigInt!
-  organizer: String!
+  eventId: BigInt! @index
+  organizer: String! @index
   amount: BigInt!
 }
 
 type TicketingCore_TicketPurchased {
   id: ID!
-  eventId: BigInt!
-  tierIdx: BigInt!
-  buyer: String!
-  tokenId: BigInt!
+  eventId: BigInt! @index
+  tierIdx: BigInt! @index
+  buyer: String! @index
+  tokenId: BigInt! @index
   price: BigInt!
 }
 
 type TicketingCore_TicketRefunded {
   id: ID!
-  eventId: BigInt!
-  tierIdx: BigInt!
-  buyer: String!
-  tokenId: BigInt!
+  eventId: BigInt! @index
+  tierIdx: BigInt! @index
+  buyer: String! @index
+  tokenId: BigInt! @index
   refundAmount: BigInt!
 }
 
@@ -52,7 +52,7 @@ type TicketingCore_TicketRefunded {
 
 type EventStats {
   id: ID!
-  eventId: BigInt!
+  eventId: BigInt! @index
   totalPurchases: Int!
   totalRefunds: Int!
   totalRevenue: BigInt!
@@ -63,8 +63,8 @@ type EventStats {
 
 type TierStats {
   id: ID!
-  eventId: BigInt!
-  tierIdx: BigInt!
+  eventId: BigInt! @index
+  tierIdx: BigInt! @index
   soldCount: Int!
   purchaseCount: Int!
   refundCount: Int!
@@ -74,7 +74,7 @@ type TierStats {
 
 type UserStats {
   id: ID!
-  address: String!
+  address: String! @index
   totalTicketsPurchased: Int!
   totalTicketsRefunded: Int!
   activeTickets: Int!
@@ -84,7 +84,7 @@ type UserStats {
 
 type OrganizerStats {
   id: ID!
-  address: String!
+  address: String! @index
   eventsCreated: Int!
   totalRevenue: BigInt!
   totalWithdrawn: BigInt!
