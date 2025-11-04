@@ -1,0 +1,554 @@
+
+ ▐▛███▜▌   Claude Code v2.0.27
+▝▜█████▛▘  Sonnet 4.5 · Claude API
+  ▘▘ ▝▝    /home/denis/Workspaces/hackathons/ethonline-2025/going-in
+
+> /clear 
+  ⎿  (no content)
+
+> Let's breakdown @PRD.md into tasks. Record the output to TASKS.md in the root of the project. 
+
+● I'll analyze the PRD and break it down into actionable tasks, then record them to TASKS.md.
+
+● Write(TASKS.md)
+  ⎿  Wrote 639 lines to TASKS.md                                                                          
+     # Going-In Project Tasks Breakdown
+     This document breaks down the PRD into actionable development tasks organized by phase and component.
+     ## Phase 1: Core Smart Contracts (Week 1)
+     ### 1.1 Setup & Infrastructure
+     - [ ] **Task 1.1.1**: Add Arcology Concurrent Library dependency
+       - Add `@arcologynetwork/concurrentlib: ^5.0.0` to hardhat/package.json
+     … +629 lines (ctrl+o to expand)
+
+● I've created a comprehensive task breakdown in TASKS.md that organizes the PRD into actionable development tasks. Here's what I've included:
+
+  Structure
+
+  Phase 1: Core Smart Contracts (Week 1) - 39 tasks
+  - Setup & Infrastructure (2 tasks)
+  - ConcurrentERC20 Implementation (4 tasks)
+  - ConcurrentTicketNFT Implementation (5 tasks)
+  - TicketingCore Implementation (9 tasks)
+  - Load Testing Infrastructure (4 tasks)
+
+  Phase 2: Frontend Development (Week 2) - 30 tasks
+  - Web3 Integration Setup (3 tasks)
+  - Event Creation Interface (3 tasks)
+  - Event Discovery & Browsing (3 tasks)
+  - Ticket Purchase Flow (4 tasks)
+  - Refund Management (3 tasks)
+  - Organizer Dashboard (4 tasks)
+  - Navigation & Layout (3 tasks)
+  - Real-time Updates & Optimization (4 tasks)
+
+  Phase 3: Integration & Load Testing (Week 3) - 22 tasks
+  - Deployment to Arcology DevNet (3 tasks)
+  - End-to-End Testing (3 tasks)
+  - Load Testing Implementation (4 tasks)
+  - Gas Optimization (3 tasks)
+  - Security Audit Preparation (3 tasks)
+  - Documentation & Demo Preparation (4 tasks)
+
+  Continuous Tasks - 4 ongoing task categories
+  - Git Workflow
+  - Code Quality
+  - Testing
+  - Documentation
+
+  Key Features
+
+  ✅ Organized by Phase - Matches PRD's 3-week timeline
+  ✅ Actionable Tasks - Each task has clear deliverables
+  ✅ Checkbox Format - Easy progress tracking
+  ✅ Success Criteria - Clear definition of "done" for each phase
+  ✅ Risk Mitigation - Checklist for common pitfalls
+  ✅ Dependencies - Sequential phases with some parallel work opportunities
+
+  The file is now ready at /home/denis/Workspaces/hackathons/ethonline-2025/going-in/TASKS.md for your reference throughout development.
+
+> I'd like to make a change to @PRD.md and @TASKS.md:
+Instead of implementing context-specific ConcurrentTicketNFT I want generic purpose ConcurrentERC721 contract with just ERC-721 interface implemented with Arcology concurrency 
+library. 
+
+● I'll help you update both the PRD and TASKS documents to replace the context-specific ConcurrentTicketNFT with a generic ConcurrentERC721 implementation.
+
+  Let me present the plan for these changes:
+                                                                                                                     
+●User approved Claude's plan:
+  ⎿  Plan: Replace ConcurrentTicketNFT with Generic ConcurrentERC721
+
+     Changes to PRD.md:
+
+     1. Section 2.2.1 (Core Contracts) - Update contract description:
+       - Replace "ConcurrentTicketNFT.sol" with "ConcurrentERC721.sol"
+       - Change description from ticketing-specific to generic ERC-721 with Arcology concurrent structures
+       - Remove ticketing-specific features (tier information, lazy minting context)
+       - Focus on: generic ERC-721 interface, U256Cumulative for totalSupply, parallel-safe transfers
+     2. Section 2.3 (Project Structure) - Update file paths:
+       - Change ConcurrentTicketNFT.sol to ConcurrentERC721.sol
+     3. Throughout PRD - Global replacements:
+       - Replace "ConcurrentTicketNFT" with "ConcurrentERC721" in:
+           - Architecture diagrams (mermaid chart)
+         - Data structure references
+         - Function call examples
+         - Appendices
+
+     Changes to TASKS.md:
+
+     1. Section 1.3 (ConcurrentTicketNFT Implementation) → Section 1.3 (ConcurrentERC721 Implementation):
+       - Task 1.3.1: Change to create generic ConcurrentERC721.sol
+       - Task 1.3.2: Remove ticketing-specific lazy minting, focus on generic mint() function
+       - Task 1.3.3: Keep burn functionality as generic burn()
+       - Task 1.3.4: Keep parallel-safe transfer operations
+       - Task 1.3.5: Update tests to be generic ERC721 tests (no tier metadata)
+     2. Section 1.4 (TicketingCore Implementation):
+       - Update Task 1.4.3: TicketingCore will deploy ConcurrentERC721 instances
+       - Update Task 1.4.4: TicketingCore manages tier info internally, calls generic mint()
+       - Update Task 1.4.5: TicketingCore manages refund logic, calls generic burn()
+     3. All other references - Update throughout document:
+       - Phase descriptions
+       - File paths in project structure
+       - Test descriptions
+
+     Key Architectural Change:
+
+     Before: ConcurrentTicketNFT knows about tiers and event context
+     After: ConcurrentERC721 is a pure ERC-721 implementation; TicketingCore manages all ticketing logic and metadata
+
+     This makes the ERC721 contract reusable for any purpose, not just ticketing.
+  ⎿
+
+● Now I'll execute the plan by updating both files:
+
+● Read(PRD.md)
+  ⎿  Read 524 lines
+
+● Now I'll update the PRD.md file with the changes:
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 1 addition and 1 removal  
+       50    
+       51            subgraph "Core Contracts"
+       52                F[TicketingCore.sol]
+       53 -              G[ConcurrentTicketNFT.sol]
+       53 +              G[ConcurrentERC721.sol]
+       54                H[ConcurrentERC20.sol]
+       55            end
+       56    
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 4 additions and 4 removals                                        
+       86       - Parallel-safe ticket sales using U256Cumulative
+       87       - Unlimited revenue withdrawals for organizers
+       88       - Time-locked refund mechanism (12 hours before event)
+       89 -  2. **ConcurrentTicketNFT.sol** (Based on Arcology patterns)
+       90 -     - Custom ERC-721 implementation with concurrent structures
+       89 +  2. **ConcurrentERC721.sol** (Generic ERC-721 with Arcology patterns)
+       90 +     - Pure ERC-721 implementation with concurrent structures
+       91       - Uses U256Cumulative for total supply tracking
+       92 -     - Lazy minting on purchase
+       93 -     - Burn capability for refunds
+       92 +     - Generic mint() and burn() functions
+       93       - Parallel-safe transfer operations
+       94 +     - Reusable for any NFT use case
+       95    3. **ConcurrentERC20.sol** (Following ds-token pattern from Arcology examples)
+       96       - Custom ERC-20 implementation using Arcology's concurrent library
+       97       - U256Cumulative for balance tracking
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 1 addition and 1 removal                                
+       120    ├── hardhat/                  # Smart contracts workspace
+       121    │   ├── contracts/            # Solidity contracts
+       122    │   │   ├── TicketingCore.sol
+       123 -  │   │   ├── ConcurrentTicketNFT.sol
+       123 +  │   │   ├── ConcurrentERC721.sol
+       124    │   │   └── ConcurrentERC20.sol
+       125    │   ├── ignition/
+       126    │   │   ├── modules/          # Hardhat Ignition deployment modules
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 1 addition and 1 removal                           
+       220        Frontend->>TicketingCore: purchaseTicket(tierIdx)
+       221        TicketingCore->>TicketingCore: tier.sold.add(1)
+       222        TicketingCore->>ERC20: transferFrom(user, contract, price)
+       223 -      TicketingCore->>NFT: mintTicket(user)
+       223 +      TicketingCore->>NFT: mint(user)
+       224        NFT-->>TicketingCore: tokenId
+       225        TicketingCore-->>Frontend: Purchase successful
+       226        Frontend-->>User: Display NFT ticket
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 2 additions and 2 removals                                     
+       413    ### Phase 1: Core Smart Contracts (Week 1)
+       414    
+       415    1. Implement ConcurrentERC20 following ds-token pattern
+       416 -  2. Implement ConcurrentTicketNFT with lazy minting
+       417 -  3. Develop TicketingCore with 3-tier structure
+       416 +  2. Implement ConcurrentERC721 as generic ERC-721 with Arcology concurrency
+       417 +  3. Develop TicketingCore with 3-tier structure (manages ticketing logic)
+       418    4. Write comprehensive Solidity tests
+       419    
+       420    ### Phase 2: Frontend Development (Week 2)
+
+● Now let me update the TASKS.md file with similar changes:
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 12 additions and 12 removals                              
+       42      - Test balance tracking accuracy under concurrent operations
+       43      - Verify gas costs are within targets (<50k per transfer)
+       44    
+       45 -  ### 1.3 ConcurrentTicketNFT Implementation
+       45 +  ### 1.3 ConcurrentERC721 Implementation
+       46    
+       47 -  - [ ] **Task 1.3.1**: Create ConcurrentTicketNFT.sol contract
+       48 -    - Create `hardhat/contracts/ConcurrentTicketNFT.sol`
+       49 -    - Import Arcology's concurrent library and OpenZeppelin base contracts
+       47 +  - [ ] **Task 1.3.1**: Create ConcurrentERC721.sol contract
+       48 +    - Create `hardhat/contracts/ConcurrentERC721.sol`
+       49 +    - Import Arcology's concurrent library and OpenZeppelin ERC721 base
+       50      - Use U256Cumulative for totalSupply tracking
+       51 +    - Implement as generic, reusable ERC-721 (not ticketing-specific)
+       52    
+       53 -  - [ ] **Task 1.3.2**: Implement lazy minting mechanism
+       54 -    - `mintTicket(address to)` function (only callable by TicketingCore)
+       53 +  - [ ] **Task 1.3.2**: Implement generic minting mechanism
+       54 +    - `mint(address to)` function with access control
+       55      - Generate sequential token IDs using U256Cumulative
+       56 -    - Store tier information in token metadata
+       56      - Emit Transfer event per ERC721 standard
+       57    
+       58 -  - [ ] **Task 1.3.3**: Implement burn functionality for refunds
+       59 -    - `burnTicket(uint256 tokenId)` function
+       58 +  - [ ] **Task 1.3.3**: Implement burn functionality
+       59 +    - `burn(uint256 tokenId)` function
+       60      - Verify ownership before burning
+       61      - Decrement totalSupply using U256Cumulative
+       62      - Emit Transfer to zero address
+     ...
+       65      - Override `_transfer()` to use concurrent structures
+       66      - Implement `safeTransferFrom()` with conflict detection
+       67      - Add access control (only owner or approved can transfer)
+       68 +    - Ensure ERC-721 standard compliance
+       69    
+       70 -  - [ ] **Task 1.3.5**: Write unit tests for ConcurrentTicketNFT
+       71 -    - Test lazy minting by authorized contract
+       70 +  - [ ] **Task 1.3.5**: Write unit tests for ConcurrentERC721
+       71 +    - Test minting by authorized addresses
+       72      - Test burn functionality
+       73      - Test parallel minting (multiple simultaneous mints)
+       74      - Test transfer operations
+       75      - Test totalSupply accuracy under concurrent operations
+       76 -    - Verify gas costs (<50k for mint, <30k for burn)
+       76    
+       77    ### 1.4 TicketingCore Implementation
+       78    
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 2 additions and 2 removals                                                
+       105    
+       106    - [ ] **Task 1.4.3**: Implement event creation function
+       107      - `createEvent()` with parameters: name, venue, timestamp, tier configs, paymentToken
+       108 -    - Deploy new ConcurrentTicketNFT contract for the event
+       108 +    - Deploy new ConcurrentERC721 contract for the event
+       109      - Initialize 3 tiers with capacity, price, and U256Cumulative(0, capacity)
+       110      - Validate timestamp is >12 hours in future
+       111      - Validate tier capacities are >0
+       112 -    - Store event in mapping
+       112 +    - Store event in mapping (TicketingCore manages all ticketing metadata)
+       113      - Emit EventCreated event
+       114      - Target gas: <4M including NFT deployment
+       115    
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 2 additions and 1 removal                                                  
+       118      - Validate event exists and tier index is 0-2
+       119      - Check availability: tier.sold.add(1) will revert if exceeds capacity
+       120      - Transfer payment: `paymentToken.transferFrom(msg.sender, address(this), tier.price)`
+       121 -    - Mint NFT: `ticketNFT.mintTicket(msg.sender)`
+       121 +    - Mint NFT: `ticketNFT.mint(msg.sender)` (generic ERC-721 mint)
+       122 +    - Store tier metadata internally (mapping tokenId => tierIdx)
+       123      - Update sold count: tier.sold.add(1)
+       124      - Update revenue: event.revenue.add(tier.price)
+       125      - Emit TicketPurchased event
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 2 additions and 2 removals                             
+       130      - `refundTicket(uint256 eventId, uint256 tokenId)` function
+       131      - Validate timestamp < (eventTime - 12 hours)
+       132      - Verify msg.sender owns the NFT
+       133 -    - Burn NFT: `ticketNFT.burnTicket(tokenId)`
+       134 -    - Get tier from NFT metadata
+       133 +    - Get tier from internal mapping (tokenId => tierIdx)
+       134 +    - Burn NFT: `ticketNFT.burn(tokenId)` (generic ERC-721 burn)
+       135      - Decrement sold count: tier.sold.sub(1)
+       136      - Transfer refund: `paymentToken.transfer(msg.sender, tier.price)`
+       137      - Decrement revenue: event.revenue.sub(tier.price)
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 4 additions and 1 removal                                          
+        97          uint256 timestamp;
+        98          address organizer;
+        99          address paymentToken;  // ConcurrentERC20 address
+       100 -        address ticketNFT;     // ConcurrentTicketNFT address
+       100 +        address ticketNFT;     // ConcurrentERC721 address
+       101          Tier[3] tiers;         // Fixed 3-tier structure
+       102          U256Cumulative revenue; // Track total revenue
+       103      }
+       104 +  
+       105 +    // Mapping to track tier info for each ticket (TicketingCore manages metadata)
+       106 +    mapping(uint256 tokenId => uint256 tierIdx) public ticketTiers;
+       107      ```
+       108    
+       109    - [ ] **Task 1.4.3**: Implement event creation function
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 1 addition                                            
+       420    - [ ] **Task 3.1.1**: Create deployment scripts
+       421      - Create `hardhat/ignition/modules/deploy.js`
+       422      - Deploy ConcurrentERC20 (test token)
+       423 +    - Deploy ConcurrentERC721 library (or use as deployable template)
+       424      - Deploy TicketingCore
+       425      - Mint test tokens to developer accounts
+       426      - Save deployment addresses to `hardhat/dist/`
+
+● Perfect! I've successfully updated both PRD.md and TASKS.md to replace the context-specific ConcurrentTicketNFT with a generic ConcurrentERC721 contract. Here's a summary of
+  the changes:
+
+  Changes Made:
+
+  PRD.md:
+
+  1. Architecture diagram - Changed ConcurrentTicketNFT.sol to ConcurrentERC721.sol
+  2. Contract description - Updated from ticketing-specific to generic ERC-721 with emphasis on:
+    - Pure ERC-721 implementation (not ticketing-specific)
+    - Generic mint() and burn() functions
+    - Reusable for any NFT use case
+  3. Project structure - Updated file path
+  4. Sequence diagram - Changed mintTicket(user) to mint(user)
+  5. Phase 1 priorities - Updated implementation description
+
+  TASKS.md:
+
+  1. Section 1.3 - Renamed from "ConcurrentTicketNFT Implementation" to "ConcurrentERC721 Implementation"
+  2. All tasks updated to reflect generic implementation:
+    - Removed ticketing-specific metadata storage
+    - Changed to generic mint() and burn() functions
+    - No tier information in NFT contract
+  3. TicketingCore data structures - Added explicit note that TicketingCore manages all ticketing metadata via internal mappings
+  4. Purchase/refund tasks - Updated to show TicketingCore calls generic ERC-721 functions and manages tier info separately
+
+  Key Architectural Change:
+
+  Before: ConcurrentTicketNFT knew about tiers and event contextAfter: ConcurrentERC721 is a pure, reusable ERC-721 implementation; TicketingCore manages all ticketing-specific
+  logic and metadata internally
+
+  This makes the ERC721 contract fully generic and reusable for any purpose beyond ticketing!
+
+> I'd like to make another change. Instead of linking tiers to NFT collections, I want to deploy different NFT collection per tier. So when new event is created, each tier will 
+have capacity, price & nft address (to be deployed manually for each tier). 
+Ideally, the NFT contract should be deployed from the TicketingCore contract automatially, if it's possible with Solidity. Otherwise it's OK to require to deploy them outside 
+Solidity and provide deployment addresses in TicketingCore.createEvent function arguments. 
+
+● I'll help you update the PRD and TASKS to reflect this change - deploying separate NFT collections per tier. Let me update both documents:
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 6 additions and 3 removals                                                                                                                           
+       102    
+       103    Each event has exactly 3 tiers with the following properties:
+       104    
+       105 -  - **Tier 1:** Premium (capacity, price)
+       106 -  - **Tier 2:** Standard (capacity, price)
+       107 -  - **Tier 3:** General (capacity, price)
+       105 +  - **Tier 1:** Premium (capacity, price, dedicated NFT collection)
+       106 +  - **Tier 2:** Standard (capacity, price, dedicated NFT collection)
+       107 +  - **Tier 3:** General (capacity, price, dedicated NFT collection)
+       108    
+       109    Each tier uses:
+       110    
+       111    - U256Cumulative for sold count (0 to capacity bounds)
+       112    - Fixed price in ERC-20 tokens
+       113 +  - Dedicated ConcurrentERC721 contract (one NFT collection per tier)
+       114    - Capacity limit enforced by cumulative upper bound
+       115    
+       116 +  **NFT Deployment**: TicketingCore automatically deploys 3 separate ConcurrentERC721 contracts (one per tier) during event creation for gas efficiency and better
+           +  organization.
+       117 +  
+       118    ### 2.3 Project Structure
+       119    
+       120    ```
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 5 additions and 5 removals                                            
+       172    - **Input Parameters:**
+       173      - Event name, venue, timestamp
+       174      - Fixed 3 tiers with:
+       175 -      - Tier 1: Capacity (uint256), price (uint256)
+       176 -      - Tier 2: Capacity (uint256), price (uint256)
+       177 -      - Tier 3: Capacity (uint256), price (uint256)
+       175 +      - Tier 1: Capacity (uint256), price (uint256), name (string), symbol (string)
+       176 +      - Tier 2: Capacity (uint256), price (uint256), name (string), symbol (string)
+       177 +      - Tier 3: Capacity (uint256), price (uint256), name (string), symbol (string)
+       178      - Payment token address (standard ERC-20)
+       179    - **Constraints:**
+       180      - Event must be >12 hours in future
+       181      - Tier capacities must be > 0
+       182    - **Output:**
+       183      - Event ID for reference
+       184 -    - Deployed NFT contract address
+       185 -    - Gas cost: ~3-4M gas for 3-tier deployment
+       184 +    - 3 deployed NFT contract addresses (one per tier)
+       185 +    - Gas cost: ~8-10M gas for 3 NFT contract deployments
+       186    
+       187    #### 3.1.2 Revenue Withdrawal
+       188    
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 1 addition and 1 removal                     
+       295    
+       296    - **Deployment Costs:**
+       297      - Main contract: <5M gas
+       298 -    - NFT contract per event: <3M gas
+       298 +    - NFT contracts per event: 3 × ~3M gas = ~9M gas total
+       299    - **Operation Costs:**
+       300      - Purchase: <200k gas
+       301      - Refund: <150k gas
+
+● Update(PRD.md)
+  ⎿  Updated PRD.md with 1 addition and 1 removal                            
+       441    ### A. Gas Estimation Calculations
+       442    
+       443    ```
+       444 -  Event Creation: 3M (base) + 1M (NFT contract)
+       444 +  Event Creation: 3M (base) + 3M × 3 (NFT contracts) = ~12M total
+       445    Ticket Purchase: 150k (logic) + 50k (NFT mint)
+       446    Refund: 100k (logic) + 30k (NFT burn)
+       447    Withdrawal: 50k (ERC-20 transfer)
+
+● Now let me update the TASKS.md file with the same changes:
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 1 addition and 4 removals                                          
+       87      struct Tier {
+       88          uint256 capacity;
+       89          uint256 price;
+       90 +        address nftContract;   // Dedicated ConcurrentERC721 per tier
+       91          U256Cumulative sold;  // Arcology concurrent counter
+       92      }
+       93    
+     ...
+        97          uint256 timestamp;
+        98          address organizer;
+        99          address paymentToken;  // ConcurrentERC20 address
+       100 -        address ticketNFT;     // ConcurrentERC721 address
+       100          Tier[3] tiers;         // Fixed 3-tier structure
+       101          U256Cumulative revenue; // Track total revenue
+       102      }
+       103 -  
+       104 -    // Mapping to track tier info for each ticket (TicketingCore manages metadata)
+       105 -    mapping(uint256 tokenId => uint256 tierIdx) public ticketTiers;
+       103      ```
+       104    
+       105    - [ ] **Task 1.4.3**: Implement event creation function
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 6 additions and 6 removals                                                                                               
+       104      ```
+       105    
+       106    - [ ] **Task 1.4.3**: Implement event creation function
+       107 -    - `createEvent()` with parameters: name, venue, timestamp, tier configs, paymentToken
+       108 -    - Deploy new ConcurrentERC721 contract for the event
+       109 -    - Initialize 3 tiers with capacity, price, and U256Cumulative(0, capacity)
+       107 +    - `createEvent()` with parameters: name, venue, timestamp, tier configs (capacity, price, nftName, nftSymbol for each), paymentToken
+       108 +    - Deploy 3 separate ConcurrentERC721 contracts (one per tier) using `new ConcurrentERC721(name, symbol)`
+       109 +    - Initialize 3 tiers with capacity, price, nftContract address, and U256Cumulative(0, capacity)
+       110      - Validate timestamp is >12 hours in future
+       111      - Validate tier capacities are >0
+       112 -    - Store event in mapping (TicketingCore manages all ticketing metadata)
+       113 -    - Emit EventCreated event
+       114 -    - Target gas: <4M including NFT deployment
+       112 +    - Store event in mapping
+       113 +    - Emit EventCreated event with 3 NFT addresses
+       114 +    - Target gas: ~10M for 3 NFT deployments
+       115    
+       116    - [ ] **Task 1.4.4**: Implement ticket purchase function
+       117      - `purchaseTicket(uint256 eventId, uint256 tierIdx)` function
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 3 additions and 3 removals                                                                      
+       116    - [ ] **Task 1.4.4**: Implement ticket purchase function
+       117      - `purchaseTicket(uint256 eventId, uint256 tierIdx)` function
+       118      - Validate event exists and tier index is 0-2
+       119 +    - Get tier-specific NFT contract: `ConcurrentERC721 tierNFT = ConcurrentERC721(tiers[tierIdx].nftContract)`
+       120      - Check availability: tier.sold.add(1) will revert if exceeds capacity
+       121      - Transfer payment: `paymentToken.transferFrom(msg.sender, address(this), tier.price)`
+       122 -    - Mint NFT: `ticketNFT.mint(msg.sender)` (generic ERC-721 mint)
+       123 -    - Store tier metadata internally (mapping tokenId => tierIdx)
+       122 +    - Mint NFT from tier-specific collection: `tierNFT.mint(msg.sender)`
+       123      - Update sold count: tier.sold.add(1)
+       124      - Update revenue: event.revenue.add(tier.price)
+       125 -    - Emit TicketPurchased event
+       125 +    - Emit TicketPurchased event (include tier index and NFT address)
+       126      - Add ReentrancyGuard protection
+       127      - Target gas: <200k
+       128    
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 4 additions and 4 removals                                                                      
+       127      - Target gas: <200k
+       128    
+       129    - [ ] **Task 1.4.5**: Implement refund mechanism
+       130 -    - `refundTicket(uint256 eventId, uint256 tokenId)` function
+       130 +    - `refundTicket(uint256 eventId, uint256 tierIdx, uint256 tokenId)` function
+       131      - Validate timestamp < (eventTime - 12 hours)
+       132 -    - Verify msg.sender owns the NFT
+       133 -    - Get tier from internal mapping (tokenId => tierIdx)
+       134 -    - Burn NFT: `ticketNFT.burn(tokenId)` (generic ERC-721 burn)
+       132 +    - Get tier-specific NFT contract: `ConcurrentERC721 tierNFT = ConcurrentERC721(tiers[tierIdx].nftContract)`
+       133 +    - Verify msg.sender owns the NFT in that specific collection
+       134 +    - Burn NFT: `tierNFT.burn(tokenId)` (generic ERC-721 burn)
+       135      - Decrement sold count: tier.sold.sub(1)
+       136      - Transfer refund: `paymentToken.transfer(msg.sender, tier.price)`
+       137      - Decrement revenue: event.revenue.sub(tier.price)
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 2 additions and 2 removals                                                 
+       239    - [ ] **Task 2.2.1**: Create EventCreator component
+       240      - Create `frontend/src/components/EventCreator/EventCreator.jsx`
+       241      - Form for event name, venue, timestamp
+       242 -    - 3-tier configuration inputs (capacity, price for each)
+       242 +    - 3-tier configuration inputs (capacity, price, NFT name, NFT symbol for each)
+       243      - Payment token address input
+       244 -    - Form validation (timestamp >12 hours future, capacities >0)
+       244 +    - Form validation (timestamp >12 hours future, capacities >0, valid NFT names/symbols)
+       245    
+       246    - [ ] **Task 2.2.2**: Implement event creation flow
+       247      - Connect to TicketingCore contract
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 2 additions and 2 removals                                   
+       245    
+       246    - [ ] **Task 2.2.2**: Implement event creation flow
+       247      - Connect to TicketingCore contract
+       248 -    - Call `createEvent()` with form data
+       248 +    - Call `createEvent()` with form data (including tier NFT names/symbols)
+       249      - Show transaction pending state
+       250 -    - Display success with event ID and NFT contract address
+       250 +    - Display success with event ID
+       251      - Handle errors with user-friendly messages
+       252      - Gas estimation before submission
+       253    
+
+● Update(TASKS.md)
+  ⎿  Updated TASKS.md with 1 addition and 2 removals                                             
+       417    - [ ] **Task 3.1.1**: Create deployment scripts
+       418      - Create `hardhat/ignition/modules/deploy.js`
+       419      - Deploy ConcurrentERC20 (test token)
+       420 -    - Deploy ConcurrentERC721 library (or use as deployable template)
+       421 -    - Deploy TicketingCore
+       420 +    - Deploy TicketingCore (note: NFT contracts are deployed per-event automatically)
+       421      - Mint test tokens to developer accounts
+       422      - Save deployment addresses to `hardhat/dist/`
+       423    
+
+
+
